@@ -1,0 +1,28 @@
+{
+  "name": "DndProximityVoice.Runtime",
+  "rootNamespace": "DndProximityVoice",
+  "references": [
+    "Discord.Sdk",
+    "Unity.Collections",
+    "Unity.Netcode.Runtime",
+    "Unity.Networking.Transport",
+    "Unity.Services.Authentication",
+    "Unity.Services.Core",
+    "Unity.Services.Multiplayer"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [
+    {
+      "name": "com.discord.partnersdk",
+      "expression": "[1.10.18687,2.0.0)",
+      "define": "DND_DISCORD_SDK"
+    }
+  ],
+  "noEngineReferences": false
+}

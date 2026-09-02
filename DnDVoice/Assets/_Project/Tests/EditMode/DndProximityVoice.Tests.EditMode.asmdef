@@ -1,0 +1,22 @@
+{
+  "name": "DndProximityVoice.Tests.EditMode",
+  "rootNamespace": "DndProximityVoice.Tests",
+  "references": [
+    "DndProximityVoice.Runtime"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

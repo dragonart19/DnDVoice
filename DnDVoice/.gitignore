@@ -1,0 +1,51 @@
+# Unity generated folders
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# IDE files
+.vs/
+.vscode/
+.idea/
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Unity crash and diagnostic output
+UnityOpen.log
+sysinfo.txt
+crashlytics-build.properties
+
+# Builds and packages
+*.apk
+*.aab
+*.app
+*.unitypackage
+
+# Sensitive local configuration
+.env
+.env.*
+!.env.example
+discord-config.local.json
+*.token
+*.secret
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini

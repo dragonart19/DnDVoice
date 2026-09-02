@@ -6,6 +6,37 @@
 # See: https://github.com/github/gitignore/tree/main/Global
 #
 .utmp/
+
+# Unity project kept in the DnDVoice subfolder
+/DnDVoice/[Ll]ibrary/
+/DnDVoice/[Tt]emp/
+/DnDVoice/[Oo]bj/
+/DnDVoice/[Bb]uild/
+/DnDVoice/[Bb]uilds/
+/DnDVoice/[Ll]ogs/
+/DnDVoice/[Uu]ser[Ss]ettings/
+/DnDVoice/[Mm]emoryCaptures/
+/DnDVoice/[Rr]ecordings/
+/DnDVoice/.vs/
+/DnDVoice/work/
+
+# Discord Social SDK: keep the release runtime, exclude debug symbols and
+# multi-hundred-megabyte debug binaries that exceed GitHub's file limit.
+/DnDVoice/Packages/com.discord.partnersdk/Runtime/Plugins/Debug/
+/DnDVoice/Packages/com.discord.partnersdk/Runtime/Plugins/Debug.meta
+/DnDVoice/Packages/com.discord.partnersdk/Runtime/Plugins/x86_64/Debug/
+/DnDVoice/Packages/com.discord.partnersdk/Runtime/Plugins/x86_64/Debug.meta
+/DnDVoice/Packages/com.discord.partnersdk/Runtime/Plugins/iOS/Debug/
+/DnDVoice/Packages/com.discord.partnersdk/Runtime/Plugins/iOS/Debug.meta
+*.dbg
+
+# Local credentials and machine-specific configuration
+/DnDVoice/.env
+/DnDVoice/.env.*
+!/DnDVoice/.env.example
+/DnDVoice/discord-config.local.json
+*.token
+*.secret
 /[Ll]ibrary/
 /[Tt]emp/
 /[Oo]bj/
