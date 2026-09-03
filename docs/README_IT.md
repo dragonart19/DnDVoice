@@ -1,6 +1,8 @@
 # D&D Proximity Voice — documentazione italiana
 
-[← README principale](../README.md) · [English documentation](README_EN.md)
+[← README principale](../README.md) · [English documentation](README_EN.md) ·
+[Roadmap prodotto 2.0](ROADMAP_2_0_IT.md) ·
+[Kanban GitHub](https://github.com/users/dragonart19/projects/1/views/1)
 
 ## 1. Visione del progetto
 
