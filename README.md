@@ -10,7 +10,26 @@ privati.
 > voce.
 
 [Documentazione completa in italiano](docs/README_IT.md) ·
-[Full documentation in English](docs/README_EN.md)
+[Full documentation in English](docs/README_EN.md) ·
+[Kanban GitHub V2](https://github.com/users/dragonart19/projects/1/views/1) ·
+[Roadmap prodotto 2.0](docs/ROADMAP_2_0_IT.md) ·
+[Product Roadmap 2.0](docs/ROADMAP_2_0_EN.md)
+
+## Direzione 2.0
+
+La Build 1.0 resta la base stabile. La prossima fase trasforma il progetto in
+un tavolo virtuale ibrido **2D/3D** in cui il DM costruisce scene, controlla
+pedine e NPC e può parlare dal punto di vista di qualunque personaggio.
+
+Il piano commerciale parte senza costi anticipati: **Player Client gratuito**,
+**DM Edition con acquisto una tantum**, strumenti e asset CC0, distribuzione
+iniziale fuori da Steam. La prima prova sarà una taverna 3D completa con builder
+modulare, NPC impersonabile, suono ambientale e voce spaziale a due client.
+
+La lista ordinata, i criteri di uscita e le funzioni intenzionalmente escluse
+dall'MVP sono nella [roadmap italiana](docs/ROADMAP_2_0_IT.md) e nella
+[roadmap inglese](docs/ROADMAP_2_0_EN.md). L'avanzamento operativo è gestito
+nel [Kanban GitHub ufficiale](https://github.com/users/dragonart19/projects/1/views/1).
 
 ## Funzioni disponibili
 
@@ -103,7 +122,9 @@ DnDVoice/
 └── ProjectSettings/            configurazione Unity
 docs/
 ├── README_IT.md                documentazione italiana
-└── README_EN.md                English documentation
+├── README_EN.md                English documentation
+├── ROADMAP_2_0_IT.md           visione, fasi e backlog V2
+└── ROADMAP_2_0_EN.md           V2 vision, phases, and backlog
 ```
 
 ## Sicurezza e licenza
