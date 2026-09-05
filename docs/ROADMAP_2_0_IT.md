@@ -221,7 +221,18 @@ alla piattaforma community.
 
 - Ogni attività vive in GitHub e ha priorità, area, milestone e criterio di
   accettazione.
-- Una sola attività per branch; modifiche piccole e verificabili.
+- `main` rimane la linea stabile della Build 1.x; lo sviluppo della V2 viene
+  integrato nel branch `develop/v2`, creato da `main` al commit `6d2304a`.
+- Ogni scheda scelta dal Kanban viene prima convertita da bozza a issue della
+  repository, poi sviluppata in un branch `feature/<numero>-<nome-breve>` creato
+  da `develop/v2`. Una sola issue per branch; modifiche piccole e verificabili.
+- L'utente esegue i test e comunica l'esito. Per ogni consegna Codex fornisce
+  una checklist e i comandi necessari, ma non avvia suite o build salvo richiesta
+  esplicita dell'utente.
+- Un'issue viene chiusa soltanto dopo: criteri di accettazione soddisfatti,
+  documentazione aggiornata, test confermati dall'utente e modifica integrata
+  in `develop/v2`. Spostare una scheda in `Done` non sostituisce la chiusura
+  dell'issue collegata.
 - Le funzioni di rete o voce richiedono sempre un test con almeno due client.
 - Nessun asset entra nel progetto senza origine e licenza registrate.
 - Le nuove funzioni non devono rompere la Build 1.0.
