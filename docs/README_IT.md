@@ -4,6 +4,11 @@
 [Roadmap prodotto 2.0](ROADMAP_2_0_IT.md) ·
 [Kanban GitHub](https://github.com/users/dragonart19/projects/1/views/1)
 
+> Prova programmata: **6 settembre 2026, ore 10:30 Europe/Rome, 7 partecipanti
+> compreso il DM**. Il [piano operativo](PLAYTEST_2026_09_06_IT.md) contiene
+> priorità, checklist, procedura di emergenza ed esiti delle verifiche.
+> Commit e push delle modifiche vengono eseguiti dall'utente.
+
 ## 1. Visione del progetto
 
 D&D Proximity Voice è un companion desktop per sessioni di Dungeons & Dragons
@@ -380,6 +385,10 @@ distribuzione pubblica serviranno firma del codice, pagina release, checksum e
 un processo ripetibile di pubblicazione.
 
 ## 16. Test e verifica manuale
+
+Per la prova del 6 settembre usare la [checklist a sette partecipanti](PLAYTEST_2026_09_06_IT.md).
+La checklist minima a due client qui sotto resta una verifica di base, non
+una certificazione della stabilità a sette o otto utenti.
 
 In Unity apri **Window > General > Test Runner**, seleziona **EditMode** ed
 esegui tutti i test. La suite copre le aree core, tra cui:

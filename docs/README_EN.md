@@ -4,6 +4,11 @@
 [Product Roadmap 2.0](ROADMAP_2_0_EN.md) ·
 [GitHub Kanban](https://github.com/users/dragonart19/projects/1/views/1)
 
+> Scheduled playtest: **September 6, 2026, 10:30 Europe/Rome, seven participants
+> including the DM**. The [playtest plan](PLAYTEST_2026_09_06_EN.md) records
+> priorities, the checklist, fallback procedure, and verification results.
+> The user performs commits and pushes.
+
 ## 1. Project vision
 
 D&D Proximity Voice is a desktop companion for online Dungeons & Dragons
@@ -380,6 +385,10 @@ public distribution will require code signing, a release page, checksums, and a
 repeatable publishing process.
 
 ## 16. Tests and manual verification
+
+For September 6, use the [seven-person checklist](PLAYTEST_2026_09_06_EN.md).
+The two-client checklist below is a baseline check, not certification of
+stability with seven or eight users.
 
 In Unity, open **Window > General > Test Runner**, select **EditMode**, and run
 all tests. The suite covers core areas including:

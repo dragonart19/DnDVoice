@@ -15,6 +15,19 @@ privati.
 [Roadmap prodotto 2.0](docs/ROADMAP_2_0_IT.md) ·
 [Product Roadmap 2.0](docs/ROADMAP_2_0_EN.md)
 
+## Prossima prova: 6 settembre, ore 10:30
+
+La priorità immediata è verificare la Build 1.0 **con 7 partecipanti totali,
+DM compreso**, prima di estendere il progetto. Il limite attuale di Relay è 8;
+il test reale a sette resta da eseguire. Il piano include controlli della voce,
+sincronizzazione, salvataggi, rientro e un pacchetto Windows identificabile.
+
+[Piano e checklist in italiano](docs/PLAYTEST_2026_09_06_IT.md) ·
+[Playtest plan and checklist in English](docs/PLAYTEST_2026_09_06_EN.md).
+La roadmap V2 resta valida; le nuove funzioni 3D seguono questa verifica.
+Modifiche ed esiti vengono documentati nella repository; **commit e push
+rimangono a cura dell'utente**.
+
 ## Direzione 2.0
 
 La Build 1.0 resta la base stabile. La prossima fase trasforma il progetto in
@@ -123,8 +136,10 @@ DnDVoice/
 docs/
 ├── README_IT.md                documentazione italiana
 ├── README_EN.md                English documentation
-├── ROADMAP_2_0_IT.md           visione, fasi e backlog V2
-└── ROADMAP_2_0_EN.md           V2 vision, phases, and backlog
+├── ROADMAP_2_0_IT.md            visione, fasi e backlog V2
+├── ROADMAP_2_0_EN.md            V2 vision, phases, and backlog
+├── PLAYTEST_2026_09_06_IT.md    piano, checklist ed esiti della prova a 7
+└── PLAYTEST_2026_09_06_EN.md    seven-person playtest plan and results
 ```
 
 ## Sicurezza e licenza

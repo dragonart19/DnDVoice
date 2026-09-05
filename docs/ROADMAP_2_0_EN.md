@@ -3,6 +3,14 @@
 [← Main README](../README.md) · [Versione italiana](ROADMAP_2_0_IT.md) ·
 [GitHub Kanban](https://github.com/users/dragonart19/projects/1/views/1)
 
+## Immediate priority — September 6 playtest
+
+Before adding V2 features, validate the 2D foundation for **seven participants
+on Sunday, September 6, 2026, at 10:30 Europe/Rome**. Tasks SUN-01–SUN-08,
+acceptance criteria, and results are in the [playtest plan](PLAYTEST_2026_09_06_EN.md).
+The V2 P0 priorities below belong to the following phase; they are not promises
+to deliver before Sunday. The user performs commits and pushes.
+
 ## Goal
 
 Version 2.0 evolves D&D Proximity Voice from a 2D voice companion into a hybrid

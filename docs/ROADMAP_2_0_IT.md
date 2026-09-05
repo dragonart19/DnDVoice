@@ -3,6 +3,14 @@
 [← README principale](../README.md) · [English version](ROADMAP_2_0_EN.md) ·
 [Kanban GitHub](https://github.com/users/dragonart19/projects/1/views/1)
 
+## Priorità immediata — prova del 6 settembre
+
+Prima delle nuove funzioni V2 si verifica la base 2D per **7 partecipanti,
+domenica 6 settembre 2026 alle 10:30 Europe/Rome**. Le attività SUN-01–SUN-08,
+i criteri di accettazione e gli esiti sono nel [piano della prova](PLAYTEST_2026_09_06_IT.md).
+Le priorità P0 della V2 qui sotto sono relative alla fase successiva: non sono
+impegni da completare prima di domenica. L'utente esegue commit e push.
+
 ## Obiettivo
 
 La versione 2.0 evolve D&D Proximity Voice da companion vocale 2D a tavolo
