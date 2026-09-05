@@ -165,6 +165,26 @@ pannello richiudibile dei giocatori connessi, così la mappa resta libera. I
 pannelli intercettano i clic: un comando UI non deve muovere una pedina o
 disegnare un muro sottostante.
 
+### Copiare il codice e aprire i file locali
+
+- Nel menu burger, **COPIA** accanto al codice lo copia negli appunti senza
+  spazi. La conferma **COPIATO** rimane visibile per tre secondi. È disponibile
+  per DM e giocatori dopo l'ingresso in sessione.
+- **UTILITÀ** apre un pannello laterale alternativo a Giocatori e Mappe.
+- **APRI CARTELLA LOG** apre la cartella del log dell'istanza corrente. Nella
+  build Windows è normalmente `Player.log`; nell'Editor è `Editor.log`.
+  Eventuali percorsi di log personalizzati vengono rispettati tramite
+  [`Application.consoleLogPath`](https://docs.unity3d.com/6000.3/Documentation/ScriptReference/Application-consoleLogPath.html).
+- Il DM vede anche **APRI CARTELLA MAPPE**, che apre la stessa cartella
+  `SavedMaps` usata dal salvataggio. Se è assente, viene creata vuota. Per
+  salvare la mappa corrente bisogna comunque usare il comando **SALVA MAPPA**.
+- Ai giocatori viene ricordato che i salvataggi della sessione sono sul PC del DM.
+
+Queste azioni aprono cartelle locali e non inviano file. Un problema di
+accesso mostra un messaggio nel pannello. Con il menu aperto, input delle
+pedine, zoom, rotellina e barre della mappa sono sospesi; la rotellina resta
+disponibile per gli elenchi laterali. Chiudendo il menu si riprende la navigazione.
+
 ## 8. Mappa tattica
 
 La mappa parte da `48 × 48 m`. Ogni casella rappresenta un metro. Il DM può
@@ -398,6 +418,9 @@ esegui tutti i test. La suite copre le aree core, tra cui:
 - intersezioni e attenuazione degli ostacoli;
 - conversione PCM e comportamento bounded della vecchia coda audio;
 - logica dei dati mappa e stanze dove coperta dalla suite.
+- regressioni del menu: rotellina semplice, `Ctrl` e `Shift` non modificano
+  la mappa sottostante; chiudendo il menu torna lo scorrimento; un clic nel
+  menu interrompe il trascinamento della mappa e resta disponibile al pulsante.
 
 Checklist minima prima di condividere una nuova build:
 

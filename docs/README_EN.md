@@ -164,6 +164,26 @@ The top-left burger menu contains construction tools and a collapsible connected
 players list, keeping the map clear. UI panels consume pointer events so a menu
 click should not move a token or draw a wall underneath it.
 
+### Copy the code and open local files
+
+- In the burger menu, **COPIA** next to the session code copies it without
+  spaces. **COPIATO** confirms success for three seconds. Both DM and players
+  can use it after joining a session.
+- **UTILITÀ** opens a side panel, replacing the Players or Maps drawer.
+- **APRI CARTELLA LOG** opens the current instance's log directory. In a
+  Windows build the log is normally `Player.log`; in the Editor it is
+  `Editor.log`. Custom log locations are respected using
+  [`Application.consoleLogPath`](https://docs.unity3d.com/6000.3/Documentation/ScriptReference/Application-consoleLogPath.html).
+- The DM also sees **APRI CARTELLA MAPPE**, which opens the same `SavedMaps`
+  directory used by map storage, creating an empty folder if necessary.
+  Saving the current map still requires **SALVA MAPPA** in the Maps drawer.
+- Players see a reminder that session maps are saved on the DM's computer.
+
+These commands open local folders and do not upload files. Access failures
+display a message in the panel. While the menu is open, map dragging, zoom,
+wheel scrolling, and map scrollbars are suspended. The wheel remains available
+for side-panel lists. Closing the menu restores map navigation.
+
 ## 8. Tactical map
 
 The map starts at `48 × 48 m`. Each grid square represents one meter. The DM can
@@ -398,6 +418,9 @@ all tests. The suite covers core areas including:
 - obstacle intersections and attenuation;
 - PCM conversion and bounded behavior of the previous audio queue;
 - map and room data logic where currently covered.
+- menu regressions: plain, `Ctrl`, and `Shift` wheel input do not change the
+  underlying map; closing the menu restores scrolling; a menu click cancels map
+  dragging and remains available to the button.
 
 Minimum checklist before sharing a build:
 

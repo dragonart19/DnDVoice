@@ -16,7 +16,8 @@ outcome has not yet been verified.
 
 ## Inspected baseline
 
-- Repository: `dragonart19/DnDVoice`, branch `main`, commit `86e05a8`.
+- Repository: `dragonart19/DnDVoice`, branch `main`; candidate baseline
+  `e81c288` plus the local changes listed in this document.
 - Unity project: the repository's inner `DnDVoice/` directory.
 - Editor: `6000.3.8f1`; network protocol: `6`.
 - Relay: seven connections plus the host, eight total participants. The
@@ -48,6 +49,12 @@ does not imply that online cards have already been created or moved.
 | SUN-06 | P0 | IT/EN documentation and results | Throughout each task | Actual status, checks, and limits recorded; user performs commits and pushes |
 | SUN-07 | P1, optional | Copy session code button | 30–60 min including UI check | Copies the exact code; click does not interact with the map beneath the menu |
 | SUN-08 | P1, optional | Quick access to logs and saved maps | 30–90 min including UI check | Opens only the intended local folders; handles folders that do not exist yet |
+
+Status on September 5 at 17:34 Europe/Rome: SUN-01, SUN-07, and SUN-08 are
+complete locally. SUN-02 has an identified ZIP that was launched and inspected
+on the development PC; extraction and launch on a second PC remain pending.
+SUN-03–SUN-05 require DM preparation and/or the real group. SUN-06 remains in
+progress until the playtest results have been recorded.
 
 The 3D builder, map/asset import, NPC impersonation, community, visual overhaul,
 new audio architecture, full automatic reconnection, and host migration remain
@@ -113,6 +120,21 @@ not a reconnection-time guarantee.
 - Copy the JSON files from `Application.persistentDataPath/SavedMaps` into the
   DM's backup folder. Do not automatically include personal maps in the ZIP.
 
+Candidate package prepared on September 5, 2026:
+
+- name: `DnDVoice-1.0-playtest-20260906-rc1.zip`;
+- size: 74,316,295 bytes (70.87 MiB);
+- SHA-256:
+  `4E2B51A84C181D9BB8003A157628632FD74EF96E345791BAEAB1BCE418F87BB2`;
+- sources: baseline commit `e81c288` plus local changes for code copying,
+  utilities, menu input blocking, tests, and documentation;
+- local verification: successful build and EXE launch; code copying and the
+  log/map folder shortcuts were inspected visually;
+- external verification: extraction and launch on another PC are still pending.
+
+Do not replace this ZIP while retaining the same name. After any source change,
+generate `rc2` and record its new hash.
+
 Optional checksum command, from the directory containing the ZIP:
 
 ```powershell
@@ -148,17 +170,18 @@ local run Unity resolved that directory to
 
 | Check | Result as of September 5 |
 | --- | --- |
-| Repository and baseline sources located | Complete, `86e05a8` |
+| Repository and baseline sources located | Complete, baseline `e81c288` plus the candidate's local changes |
 | Actual capacity for the group of seven | Code inspected: maximum eight; real load test pending |
-| Baseline EditMode tests | **42/42 passed**, zero failed or skipped; September 5, 16:49:59 Europe/Rome |
-| New candidate Windows build | Must be generated and tested |
+| Candidate EditMode tests | **47/47 passed**, zero failed or skipped; September 5, 17:22 Europe/Rome |
+| New candidate Windows build | Built and launched locally; ZIP and SHA-256 recorded; second-PC check pending |
+| Code copy, utilities, and menu input blocking | Implemented; automated tests and local visual check complete |
 | Real seven-person test and voice continuity | Pending |
-| Commit and push of this preparation | Performed by the user |
+| Commit and push of this preparation | Performed by the user; changes are still local |
 
 Verification ran in Unity `6000.3.8f1`, batch EditMode. Unity exited with code
 `0`, with no compilation errors. The local report is
-`DnDVoice/Logs/preflight-2026-09-05/editmode-results.xml`; `unity-tests.log` is
-in the same directory. Both are excluded from Git.
+`DnDVoice/Logs/menu-utilities-2026-09-05/editmode-results-verified.xml`;
+`unity-tests-verified.log` is in the same directory. Both are excluded from Git.
 
 | Suite | Passing tests |
 | --- | ---: |
@@ -170,6 +193,7 @@ in the same directory. Both are excluded from Git.
 | PcmRingBufferTests | 5 |
 | RemotePcmDiagnosticTests | 1 |
 | RemotePcmStreamTests | 1 |
+| MapMenuInputTests | 5 |
 
 The nine tests in the four PCM suites cover local components, including the
 previous experimental playback path. They do not measure Discord Direct call

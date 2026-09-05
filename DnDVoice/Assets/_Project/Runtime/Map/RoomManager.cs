@@ -371,7 +371,7 @@ namespace DndProximityVoice.Map
             return true;
         }
 
-        private static string GetDirectoryPath()
+        internal static string GetDirectoryPath()
         {
             return Path.Combine(Application.persistentDataPath, FolderName);
         }

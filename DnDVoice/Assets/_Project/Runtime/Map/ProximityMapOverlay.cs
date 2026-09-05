@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using DndProximityVoice.Discord;
 using DndProximityVoice.Players;
 using DndProximityVoice.Realtime;
@@ -39,6 +41,11 @@ namespace DndProximityVoice.Map
         private bool burgerMenuOpen;
         private bool playersDrawerOpen;
         private bool savedMapsDrawerOpen;
+        private bool utilitiesDrawerOpen;
+        private string copiedSessionCode = string.Empty;
+        private float copiedCodeUntil;
+        private string utilityMessage = string.Empty;
+        private bool utilityMessageIsError;
         private bool wallBuildMode;
         private bool doorPlacementMode;
         private bool wallEraseMode;
@@ -273,6 +280,7 @@ namespace DndProximityVoice.Map
                 selectedPlayerId = player.DiscordUserId;
                 playersDrawerOpen = false;
                 savedMapsDrawerOpen = false;
+                utilitiesDrawerOpen = false;
                 burgerMenuOpen = false;
             }
         }
@@ -721,7 +729,7 @@ namespace DndProximityVoice.Map
                 mapSizeMeters.x * mapPixelsPerMeter,
                 mapSizeMeters.y * mapPixelsPerMeter);
             EnsureMapScroll(initialCanvasSize, viewportRect.size, mapSizeMeters);
-            HandleMapWheel(viewportRect, mapSizeMeters);
+            HandleMapWheel(viewportRect, mapSizeMeters, Event.current);
             var canvasRect = new Rect(
                 0f,
                 0f,
@@ -759,7 +767,7 @@ namespace DndProximityVoice.Map
                 DrawPlayerToken(player, canvasRect, mapPixelsPerMeter);
             }
 
-            HandleMapInput(canvasRect, mapPixelsPerMeter, pointerInsideViewport);
+            HandleMapInput(canvasRect, mapPixelsPerMeter, pointerInsideViewport, Event.current);
             GUI.EndGroup();
             GUI.EndGroup();
 
@@ -773,6 +781,8 @@ namespace DndProximityVoice.Map
                 viewportRect.y,
                 MapScrollbarSize,
                 viewportRect.height);
+            var previousEnabled = GUI.enabled;
+            GUI.enabled = previousEnabled && !burgerMenuOpen;
             mapScroll.x = GUI.HorizontalScrollbar(
                 horizontalRect,
                 mapScroll.x,
@@ -785,6 +795,7 @@ namespace DndProximityVoice.Map
                 viewportRect.height,
                 0f,
                 canvasRect.height);
+            GUI.enabled = previousEnabled;
             ClampMapScroll(canvasRect.size, viewportRect.size);
             GUI.EndGroup();
         }
@@ -1093,9 +1104,14 @@ namespace DndProximityVoice.Map
             mapScrollInitialized = true;
         }
 
-        private void HandleMapWheel(Rect viewportRect, Vector2 mapSizeMeters)
+        private void HandleMapWheel(Rect viewportRect, Vector2 mapSizeMeters, Event currentEvent)
         {
-            var currentEvent = Event.current;
+            // The map is drawn before the drawers, so it must not consume their wheel events.
+            if (burgerMenuOpen)
+            {
+                return;
+            }
+
             if (currentEvent.type != EventType.ScrollWheel ||
                 !viewportRect.Contains(currentEvent.mousePosition))
             {
@@ -1335,6 +1351,7 @@ namespace DndProximityVoice.Map
                 {
                     playersDrawerOpen = false;
                     savedMapsDrawerOpen = false;
+                    utilitiesDrawerOpen = false;
                 }
             }
 
@@ -1346,13 +1363,25 @@ namespace DndProximityVoice.Map
             var menuRect = new Rect(root.x + 14f, burgerRect.yMax + 10f, 340f, root.height - 88f);
             AppUiTheme.DrawCard(menuRect, true);
             GUI.Label(
-                new Rect(menuRect.x + 22f, menuRect.y + 20f, menuRect.width - 44f, 28f),
+                new Rect(menuRect.x + 22f, menuRect.y + 20f, menuRect.width - 144f, 28f),
                 "Menu del tavolo",
                 AppUiTheme.Title);
+            if (GUI.Button(
+                    new Rect(menuRect.xMax - 110f, menuRect.y + 18f, 88f, 28f),
+                    "UTILITÀ",
+                    utilitiesDrawerOpen ? AppUiTheme.PrimaryButton : AppUiTheme.SecondaryButton))
+            {
+                utilitiesDrawerOpen = !utilitiesDrawerOpen;
+                playersDrawerOpen = false;
+                savedMapsDrawerOpen = false;
+                utilityMessage = string.Empty;
+            }
+
             GUI.Label(
-                new Rect(menuRect.x + 22f, menuRect.y + 50f, menuRect.width - 44f, 22f),
+                new Rect(menuRect.x + 22f, menuRect.y + 50f, menuRect.width - 144f, 22f),
                 $"Sessione  ·  {FormatCode(sessionManager.CurrentSessionCode)}",
                 AppUiTheme.Caption);
+            DrawCopySessionCodeButton(new Rect(menuRect.xMax - 110f, menuRect.y + 50f, 88f, 28f));
             AppUiTheme.DrawDivider(new Rect(menuRect.x + 22f, menuRect.y + 82f, menuRect.width - 44f, 1f));
 
             var y = menuRect.y + 100f;
@@ -1374,6 +1403,7 @@ namespace DndProximityVoice.Map
             {
                 playersDrawerOpen = !playersDrawerOpen;
                 savedMapsDrawerOpen = false;
+                utilitiesDrawerOpen = false;
             }
 
             if (canManageSavedMaps && GUI.Button(
@@ -1383,6 +1413,7 @@ namespace DndProximityVoice.Map
             {
                 savedMapsDrawerOpen = !savedMapsDrawerOpen;
                 playersDrawerOpen = false;
+                utilitiesDrawerOpen = false;
                 if (savedMapsDrawerOpen)
                 {
                     pendingLoadMapName = string.Empty;
@@ -1465,6 +1496,7 @@ namespace DndProximityVoice.Map
                     burgerMenuOpen = false;
                     playersDrawerOpen = false;
                     savedMapsDrawerOpen = false;
+                    utilitiesDrawerOpen = false;
                 }
 
                 if (GUI.Button(
@@ -1480,6 +1512,7 @@ namespace DndProximityVoice.Map
                     burgerMenuOpen = false;
                     playersDrawerOpen = false;
                     savedMapsDrawerOpen = false;
+                    utilitiesDrawerOpen = false;
                 }
 
                 if (GUI.Button(
@@ -1495,6 +1528,7 @@ namespace DndProximityVoice.Map
                     burgerMenuOpen = false;
                     playersDrawerOpen = false;
                     savedMapsDrawerOpen = false;
+                    utilitiesDrawerOpen = false;
                 }
 
                 y += 40f;
@@ -1518,6 +1552,7 @@ namespace DndProximityVoice.Map
                     burgerMenuOpen = false;
                     playersDrawerOpen = false;
                     savedMapsDrawerOpen = false;
+                    utilitiesDrawerOpen = false;
                 }
 
                 GUI.enabled = true;
@@ -1557,6 +1592,7 @@ namespace DndProximityVoice.Map
                 burgerMenuOpen = false;
                 playersDrawerOpen = false;
                 savedMapsDrawerOpen = false;
+                utilitiesDrawerOpen = false;
                 wallBuildMode = false;
                 doorPlacementMode = false;
                 wallEraseMode = false;
@@ -1568,6 +1604,144 @@ namespace DndProximityVoice.Map
 
             DrawPlayersDrawer(menuRect);
             DrawSavedMapsDrawer(menuRect);
+            DrawUtilitiesDrawer(menuRect);
+        }
+
+        private void DrawCopySessionCodeButton(Rect rect)
+        {
+            var code = sessionManager.CurrentSessionCode;
+            var copied = copiedSessionCode == code && Time.unscaledTime < copiedCodeUntil;
+            var previousEnabled = GUI.enabled;
+            GUI.enabled = previousEnabled && !string.IsNullOrEmpty(code) &&
+                          code.Length == SessionCode.Length && SessionCode.IsValid(code);
+            if (GUI.Button(rect, copied ? "COPIATO" : "COPIA", AppUiTheme.SecondaryButton))
+            {
+                try
+                {
+                    GUIUtility.systemCopyBuffer = code;
+                    if (GUIUtility.systemCopyBuffer != code)
+                    {
+                        throw new InvalidOperationException("Clipboard unavailable.");
+                    }
+
+                    copiedSessionCode = code;
+                    copiedCodeUntil = Time.unscaledTime + 3f;
+                }
+                catch (Exception)
+                {
+                    utilitiesDrawerOpen = true;
+                    playersDrawerOpen = false;
+                    savedMapsDrawerOpen = false;
+                    utilityMessage = "Non riesco a copiare il codice. Riprova oppure trascrivilo dal menu.";
+                    utilityMessageIsError = true;
+                }
+            }
+
+            GUI.enabled = previousEnabled;
+        }
+
+        private void DrawUtilitiesDrawer(Rect menuRect)
+        {
+            if (!utilitiesDrawerOpen)
+            {
+                return;
+            }
+
+            var rect = new Rect(menuRect.xMax + 10f, menuRect.y, 360f, menuRect.height);
+            AppUiTheme.DrawCard(rect, false, false);
+            GUI.Label(
+                new Rect(rect.x + 20f, rect.y + 18f, rect.width - 40f, 26f),
+                "Utilità del tavolo",
+                AppUiTheme.Heading);
+            GUI.Label(
+                new Rect(rect.x + 20f, rect.y + 52f, rect.width - 40f, 42f),
+                "Apri i file sul tuo PC per un backup o per segnalare un problema.",
+                AppUiTheme.Caption);
+
+            var y = rect.y + 108f;
+            if (GUI.Button(
+                    new Rect(rect.x + 20f, y, rect.width - 40f, 42f),
+                    "APRI CARTELLA LOG",
+                    AppUiTheme.SecondaryButton))
+            {
+                try
+                {
+                    var logPath = Application.consoleLogPath;
+                    var directory = string.IsNullOrWhiteSpace(logPath)
+                        ? Application.persistentDataPath
+                        : Path.GetDirectoryName(Path.GetFullPath(logPath));
+                    OpenLocalFolder(directory);
+                }
+                catch (Exception)
+                {
+                    SetFolderOpenError();
+                }
+            }
+
+            GUI.Label(
+                new Rect(rect.x + 20f, y + 48f, rect.width - 40f, 38f),
+                Application.isEditor
+                    ? "In Unity trovi Editor.log; nell'app trovi il log della partita."
+                    : "Il file Player.log aiuta a ricostruire un problema durante la partita.",
+                AppUiTheme.Caption);
+            y += 106f;
+
+            if (playerManager.CanMovePlayers)
+            {
+                if (GUI.Button(
+                        new Rect(rect.x + 20f, y, rect.width - 40f, 42f),
+                        "APRI CARTELLA MAPPE",
+                        AppUiTheme.SecondaryButton))
+                {
+                    OpenLocalFolder(MapSaveStorage.GetDirectoryPath());
+                }
+
+                GUI.Label(
+                    new Rect(rect.x + 20f, y + 48f, rect.width - 40f, 48f),
+                    "Copia i file JSON per un backup. Per salvare la mappa attuale usa MAPPE nel menu.",
+                    AppUiTheme.Caption);
+                y += 116f;
+            }
+            else
+            {
+                GUI.Label(
+                    new Rect(rect.x + 20f, y, rect.width - 40f, 40f),
+                    "Le mappe della sessione sono salvate sul PC del Dungeon Master.",
+                    AppUiTheme.Caption);
+                y += 62f;
+            }
+
+            if (!string.IsNullOrEmpty(utilityMessage))
+            {
+                AppUiTheme.DrawLabel(
+                    new Rect(rect.x + 20f, y, rect.width - 40f, 64f),
+                    utilityMessage,
+                    AppUiTheme.Body,
+                    utilityMessageIsError ? AppUiTheme.Warning : AppUiTheme.Success);
+            }
+        }
+
+        private void OpenLocalFolder(string directory)
+        {
+            try
+            {
+                // Only application-owned paths reach this method; never a map name or session code.
+                var fullPath = Path.GetFullPath(directory);
+                Directory.CreateDirectory(fullPath);
+                Application.OpenURL(new Uri(fullPath + Path.DirectorySeparatorChar).AbsoluteUri);
+                utilityMessage = "Apertura della cartella richiesta a Windows.";
+                utilityMessageIsError = false;
+            }
+            catch (Exception)
+            {
+                SetFolderOpenError();
+            }
+        }
+
+        private void SetFolderOpenError()
+        {
+            utilityMessage = "Non riesco ad aprire la cartella. Controlla i permessi di Windows e riprova.";
+            utilityMessageIsError = true;
         }
 
         private void DrawPrivateGroupControls(Rect menuRect, ref float y)
@@ -1623,7 +1797,8 @@ namespace DndProximityVoice.Map
         private void HandleMapInput(
             Rect mapRect,
             float pixelsPerMeter,
-            bool pointerInsideViewport)
+            bool pointerInsideViewport,
+            Event currentEvent)
         {
             if (burgerMenuOpen)
             {
@@ -1632,7 +1807,6 @@ namespace DndProximityVoice.Map
                 return;
             }
 
-            var currentEvent = Event.current;
             var pointerInsideMap = pointerInsideViewport && mapRect.Contains(currentEvent.mousePosition);
             if ((wallBuildMode || doorPlacementMode || wallEraseMode) &&
                 currentEvent.type == EventType.KeyDown &&

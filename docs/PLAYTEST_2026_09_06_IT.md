@@ -16,7 +16,8 @@ reali. L'esito della sessione è ancora da verificare.
 
 ## Base esaminata
 
-- Repository: `dragonart19/DnDVoice`, branch `main`, commit `86e05a8`.
+- Repository: `dragonart19/DnDVoice`, branch `main`, base del candidato
+  `e81c288` più le modifiche locali elencate in questo documento.
 - Progetto Unity: sottocartella `DnDVoice/` della repository.
 - Editor: `6000.3.8f1`; protocollo di rete: `6`.
 - Relay: 7 connessioni oltre all'host, massimo 8 partecipanti totali. Il gruppo
@@ -49,6 +50,12 @@ documento non implica che le schede online siano già state create o spostate.
 | SUN-06 | P0 | Documentazione e registro degli esiti IT/EN | durante ogni attività | Stato reale, prove e limiti aggiornati; commit e push eseguiti dall'utente |
 | SUN-07 | P1, opzionale | Pulsante «Copia codice sessione» | 30–60 min con verifica UI | Copia il codice esatto; il clic non interagisce con la mappa sotto il menu |
 | SUN-08 | P1, opzionale | Accesso rapido a log e salvataggi | 30–90 min con verifica UI | Apre solo le cartelle locali previste, anche quando non esistono ancora |
+
+Stato al 5 settembre, ore 17:34 Europe/Rome: SUN-01, SUN-07 e SUN-08 sono
+completati localmente. SUN-02 ha uno ZIP identificato, avviato e controllato
+sul PC di sviluppo; resta da estrarlo e avviarlo su un secondo PC. SUN-03–SUN-05
+richiedono la preparazione del DM e/o il gruppo reale. SUN-06 resta in corso
+fino alla registrazione degli esiti della prova.
 
 Per questa scadenza restano in roadmap V2: builder 3D, import di mappe/asset,
 NPC impersonabili, community, rifacimento grafico, nuova architettura audio,
@@ -113,6 +120,21 @@ non una garanzia sul tempo di riconnessione.
 - Copiare i JSON da `Application.persistentDataPath/SavedMaps` in una cartella
   di backup del DM. Non includere automaticamente salvataggi personali nello ZIP.
 
+Pacchetto candidato preparato il 5 settembre 2026:
+
+- nome: `DnDVoice-1.0-playtest-20260906-rc1.zip`;
+- dimensione: 74.316.295 byte (70,87 MiB);
+- SHA-256:
+  `4E2B51A84C181D9BB8003A157628632FD74EF96E345791BAEAB1BCE418F87BB2`;
+- sorgenti: commit base `e81c288` più le modifiche locali a copia codice,
+  utilità, blocco input del menu, test e documentazione;
+- verifica locale: compilazione riuscita, avvio dell'EXE riuscito, copia codice
+  e apertura delle cartelle log/mappe controllate visivamente;
+- verifica esterna: estrazione e avvio su un altro PC ancora da eseguire.
+
+Non sostituire il contenuto di questo ZIP mantenendo lo stesso nome: dopo una
+modifica ai sorgenti, generare `rc2` e registrarne un nuovo hash.
+
 Comando facoltativo per il checksum, dalla cartella che contiene lo ZIP:
 
 ```powershell
@@ -149,17 +171,19 @@ del prodotto. Nell'esecuzione locale Unity ha risolto la cartella come
 
 | Verifica | Esito al 5 settembre |
 | --- | --- |
-| Repository e sorgenti della base individuati | Completato, `86e05a8` |
+| Repository e sorgenti della base individuati | Completato, base `e81c288` più modifiche locali del candidato |
 | Limite effettivo per il gruppo di 7 | Verificato nel codice: massimo 8; carico reale da provare |
-| Test EditMode della base | **42/42 superati**, 0 falliti, 0 saltati; 5 settembre, 16:49:59 Europe/Rome |
-| Nuova build Windows del candidato | Da generare e provare |
+| Test EditMode del candidato | **47/47 superati**, 0 falliti, 0 saltati; 5 settembre, 17:22 Europe/Rome |
+| Nuova build Windows del candidato | Compilata e avviata localmente; ZIP e SHA-256 registrati; secondo PC da provare |
+| Copia codice, utilità e blocco input menu | Implementati; test automatici e controllo visivo locale completati |
 | Prova reale a sette e continuità vocale | Da eseguire |
-| Commit e push di questa preparazione | A cura dell'utente |
+| Commit e push di questa preparazione | A cura dell'utente; modifiche ancora locali |
 
 La verifica è stata eseguita con Unity `6000.3.8f1` in modalità batch EditMode;
 Unity ha terminato con codice `0`, senza errori di compilazione. Il report
-locale è `DnDVoice/Logs/preflight-2026-09-05/editmode-results.xml` e il log è
-`unity-tests.log` nella stessa cartella, entrambi esclusi da Git.
+locale più recente è
+`DnDVoice/Logs/menu-utilities-2026-09-05/editmode-results-verified.xml` e il log
+è `unity-tests-verified.log` nella stessa cartella, entrambi esclusi da Git.
 
 | Suite | Test superati |
 | --- | ---: |
@@ -171,6 +195,7 @@ locale è `DnDVoice/Logs/preflight-2026-09-05/editmode-results.xml` e il log è
 | PcmRingBufferTests | 5 |
 | RemotePcmDiagnosticTests | 1 |
 | RemotePcmStreamTests | 1 |
+| MapMenuInputTests | 5 |
 
 I nove test delle quattro suite PCM verificano componenti locali, anche del
 percorso sperimentale precedente: non misurano qualità o latenza della chiamata

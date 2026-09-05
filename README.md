@@ -59,6 +59,7 @@ nel [Kanban GitHub ufficiale](https://github.com/users/dragonart19/projects/1/vi
 | Gruppi | ✅ | Gruppi vocali privati A/B/C come regola di mix dell'app |
 | Salvataggi | ✅ | Salvataggio, caricamento ed eliminazione locale delle mappe |
 | Interfaccia | ✅ | Tema fantasy, menu laterale e pannello giocatori richiudibili |
+| Utilità | ✅ | Copia codice sessione, apertura cartella log e accesso DM ai JSON delle mappe dal menu |
 
 Legenda: ✅ disponibile · 🟡 parziale/da rifinire · ⬜ pianificato.
 
@@ -92,6 +93,11 @@ entrare e inserisce lo stesso codice.
 - Rotellina: scorrimento verticale; `Shift + rotellina`: orizzontale.
 - `Esc`: annulla il muro o la porta in costruzione.
 - `Canc`/`Backspace`: elimina l'elemento di costruzione selezionato.
+- Menu burger → **COPIA**: copia il codice sessione senza spazi.
+- Menu burger → **UTILITÀ**: apre i log locali; il DM può aprire anche le mappe salvate.
+
+Con il menu aperto, trascinamento, barre di scorrimento e rotellina della mappa
+sono sospesi per evitare interazioni con gli elementi sottostanti.
 
 ## Limiti importanti della Build 1.0
 
