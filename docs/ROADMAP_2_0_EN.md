@@ -210,7 +210,18 @@ platform does not move forward.
 
 - Every task lives on GitHub with priority, area, milestone, and acceptance
   criteria.
-- Use one task per branch and keep changes small and verifiable.
+- `main` remains the stable Build 1.x line. V2 development is integrated into
+  `develop/v2`, created from `main` at commit `6d2304a`.
+- Each selected Kanban card is first converted from a draft into a repository
+  issue, then developed in a `feature/<number>-<short-name>` branch created
+  from `develop/v2`. Use one issue per branch and keep changes small and
+  verifiable.
+- The user runs the tests and reports their outcome. Codex provides a checklist
+  and the required commands with each delivery, but does not run suites or
+  builds unless the user explicitly requests it.
+- Close an issue only after its acceptance criteria are met, documentation is
+  current, the user has confirmed the tests, and the change is integrated into
+  `develop/v2`. Moving a card to `Done` does not replace closing its linked issue.
 - Networking and voice changes always require at least two real clients.
 - No asset enters the project without recorded origin and license.
 - New work must not break Build 1.0.
