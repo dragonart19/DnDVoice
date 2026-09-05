@@ -10,7 +10,7 @@ namespace DndProximityVoice.Editor
 {
     public static class WindowsReleaseBuild
     {
-        private const string MenuPath = "D&D Proximity Voice/Build Windows 1.0";
+        private const string MenuPath = "D&D Proximity Voice/Build Windows V2 Preview";
         private const string ExecutableName = "DnD Proximity Voice.exe";
 
         [MenuItem(MenuPath, priority = 10)]
@@ -32,7 +32,7 @@ namespace DndProximityVoice.Editor
                     return;
                 }
 
-                var buildName = "DnDProximityVoice-Windows-BUILD-1.0";
+                var buildName = "DnDProximityVoice-Windows-V2-PREVIEW";
                 var projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
                 var buildsRoot = Path.Combine(projectRoot, "Builds");
                 var buildDirectory = Path.Combine(buildsRoot, buildName);
@@ -63,7 +63,7 @@ namespace DndProximityVoice.Editor
                 CreateZip(buildDirectory, zipPath);
 
                 Debug.Log(
-                    $"Build Windows 1.0 completata: {zipPath} " +
+                    $"Build Windows V2 Preview completata: {zipPath} " +
                     $"({report.summary.totalSize / (1024f * 1024f):0.0} MB non compressi).");
                 EditorUtility.RevealInFinder(zipPath);
                 EditorUtility.DisplayDialog(
@@ -93,21 +93,23 @@ namespace DndProximityVoice.Editor
         private static void WriteReleaseInstructions(string buildDirectory)
         {
             const string instructions =
-                "D&D PROXIMITY VOICE - BUILD 1.0\r\n" +
-                "=================================\r\n\r\n" +
+                "D&D PROXIMITY VOICE - V2 PREVIEW\r\n" +
+                "===================================\r\n\r\n" +
                 "1. Estrai completamente il file ZIP in una cartella.\r\n" +
                 "2. Avvia 'DnD Proximity Voice.exe'.\r\n" +
                 "3. Se Windows SmartScreen compare, usa 'Ulteriori informazioni' e poi " +
                 "'Esegui comunque'. L'applicazione non è ancora firmata digitalmente.\r\n" +
                 "4. Accedi con il tuo account Discord.\r\n" +
-                "5. Inserisci il codice sessione ricevuto dal Dungeon Master e premi ENTRA.\r\n" +
-                "6. Premi ATTIVA VOCE e consenti l'accesso al microfono.\r\n" +
-                "7. Controlla che in basso compaia 'Mappa sincronizzata'.\r\n" +
-                "8. Usa cuffie o auricolari per evitare eco e ritorni audio.\r\n\r\n" +
+                "5. Scegli TAVOLO 2D. Il World Builder 3D non è ancora disponibile.\r\n" +
+                "6. Inserisci il codice sessione ricevuto dal Dungeon Master e premi ENTRA.\r\n" +
+                "7. Premi ATTIVA VOCE e consenti l'accesso al microfono.\r\n" +
+                "8. Controlla che in basso compaia 'Mappa sincronizzata'.\r\n" +
+                "9. Usa cuffie o auricolari per evitare eco e ritorni audio.\r\n\r\n" +
+                "Questa è una preview V2 e non sostituisce la Build 1.0 stabile.\r\n" +
                 "Non spostare soltanto il file EXE: deve restare insieme alla cartella " +
                 "'DnD Proximity Voice_Data' e agli altri file estratti.\r\n";
 
-            File.WriteAllText(Path.Combine(buildDirectory, "LEGGIMI - BUILD 1.0.txt"), instructions);
+            File.WriteAllText(Path.Combine(buildDirectory, "LEGGIMI - V2 PREVIEW.txt"), instructions);
         }
 
         private static void CreateZip(string sourceDirectory, string zipPath)

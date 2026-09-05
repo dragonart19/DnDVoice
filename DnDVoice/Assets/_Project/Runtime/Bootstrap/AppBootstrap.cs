@@ -4,6 +4,7 @@ using DndProximityVoice.Map;
 using DndProximityVoice.Players;
 using DndProximityVoice.Realtime;
 using DndProximityVoice.Session;
+using DndProximityVoice.UI;
 using DndProximityVoice.Voice;
 using UnityEngine;
 
@@ -16,6 +17,7 @@ namespace DndProximityVoice.Bootstrap
         private const int TargetFrameRate = 60;
         private static AppBootstrap instance;
         private DiscordAuthManager discordAuthManager;
+        private ProductModeManager productModeManager;
         private DiscordSessionManager discordSessionManager;
         private DiscordVoiceManager discordVoiceManager;
         private PlayerManager playerManager;
@@ -62,9 +64,11 @@ namespace DndProximityVoice.Bootstrap
 
             discordAuthManager = gameObject.AddComponent<DiscordAuthManager>();
             gameObject.AddComponent<DiscordLoginOverlay>();
+            productModeManager = gameObject.AddComponent<ProductModeManager>();
+            gameObject.AddComponent<ProductModeOverlay>();
             positionSyncManager = gameObject.AddComponent<PositionSyncManager>();
             discordSessionManager = gameObject.AddComponent<DiscordSessionManager>();
-            discordSessionManager.Initialize(discordAuthManager, positionSyncManager);
+            discordSessionManager.Initialize(discordAuthManager, positionSyncManager, productModeManager);
             tacticalMapManager = gameObject.AddComponent<TacticalMapManager>();
             tacticalMapManager.Initialize(discordSessionManager);
             playerManager = gameObject.AddComponent<PlayerManager>();
@@ -133,6 +137,7 @@ namespace DndProximityVoice.Bootstrap
 
             discordSessionManager = null;
             discordVoiceManager = null;
+            productModeManager = null;
             playerManager = null;
             positionSyncManager = null;
             tacticalMapManager = null;

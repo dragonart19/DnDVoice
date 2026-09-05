@@ -5,15 +5,16 @@ accesso e trasporto vocale, mentre una mappa tattica condivisa determina chi
 può sentire chi in base a distanza, modalità di voce, muri, porte e gruppi
 privati.
 
-> **Stato:** Build 1.0 · Discord Direct — prototipo Windows funzionante, ancora
-> in sviluppo e da validare con più client dopo ogni modifica alla rete o alla
-> voce.
+> **Stato:** `main` conserva Build 1.0 · Discord Direct; `develop/v2` e i suoi
+> branch usano l'etichetta V2 Preview. Ogni modifica alla rete o alla voce deve
+> essere validata con più client prima dell'integrazione.
 
 [Documentazione completa in italiano](docs/README_IT.md) ·
 [Full documentation in English](docs/README_EN.md) ·
 [Kanban GitHub V2](https://github.com/users/dragonart19/projects/1/views/1) ·
 [Roadmap prodotto 2.0](docs/ROADMAP_2_0_IT.md) ·
-[Product Roadmap 2.0](docs/ROADMAP_2_0_EN.md)
+[Product Roadmap 2.0](docs/ROADMAP_2_0_EN.md) ·
+[Architettura modalità](docs/ARCHITECTURE_MODES_IT.md)
 
 ## Prossima prova: 6 settembre, ore 10:30
 
@@ -60,6 +61,7 @@ nel [Kanban GitHub ufficiale](https://github.com/users/dragonart19/projects/1/vi
 | Salvataggi | ✅ | Salvataggio, caricamento ed eliminazione locale delle mappe |
 | Interfaccia | ✅ | Tema fantasy, menu laterale e pannello giocatori richiudibili |
 | Utilità | ✅ | Copia codice sessione, apertura cartella log e accesso DM ai JSON delle mappe dal menu |
+| Modalità V2 | 🟡 | Selettore 2D/3D separato; Tavolo 2D disponibile, World Builder 3D ancora disabilitato |
 
 Legenda: ✅ disponibile · 🟡 parziale/da rifinire · ⬜ pianificato.
 
@@ -79,7 +81,8 @@ Per aprire il progetto:
 2. in Unity Hub scegli **Add project from disk**;
 3. seleziona la cartella `DnDVoice` contenuta nella repository;
 4. aprila con Unity `6000.3.8f1` e attendi il ripristino dei pacchetti;
-5. avvia la scena principale e autorizza Discord.
+5. avvia la scena principale e autorizza Discord;
+6. scegli **Tavolo 2D** per usare il flusso della Build 1.0.
 
 Per provare una sessione reale servono due istanze su due account Discord:
 il DM crea la sessione e condivide il codice, l'altro giocatore sceglie di
@@ -145,7 +148,9 @@ docs/
 ├── ROADMAP_2_0_IT.md            visione, fasi e backlog V2
 ├── ROADMAP_2_0_EN.md            V2 vision, phases, and backlog
 ├── PLAYTEST_2026_09_06_IT.md    piano, checklist ed esiti della prova a 7
-└── PLAYTEST_2026_09_06_EN.md    seven-person playtest plan and results
+├── PLAYTEST_2026_09_06_EN.md    seven-person playtest plan and results
+├── ARCHITECTURE_MODES_IT.md      confini Build 1.0, 2D e 3D
+└── ARCHITECTURE_MODES_EN.md      Build 1.0, 2D, and 3D boundaries
 ```
 
 ## Sicurezza e licenza

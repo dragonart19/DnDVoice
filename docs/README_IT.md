@@ -2,6 +2,7 @@
 
 [← README principale](../README.md) · [English documentation](README_EN.md) ·
 [Roadmap prodotto 2.0](ROADMAP_2_0_IT.md) ·
+[Architettura modalità](ARCHITECTURE_MODES_IT.md) ·
 [Kanban GitHub](https://github.com/users/dragonart19/projects/1/views/1)
 
 > Prova programmata: **6 settembre 2026, ore 10:30 Europe/Rome, 7 partecipanti
@@ -126,8 +127,9 @@ Unity vero e proprio è la cartella interna `DnDVoice`.
 ### Creare una sessione
 
 1. Il DM avvia l'app e sceglie **Continua con Discord**.
-2. Dopo il login crea una nuova sessione.
-3. L'app genera un codice di 6 caratteri evitando simboli ambigui.
+2. Dopo il login sceglie **Tavolo 2D**.
+3. Crea una nuova sessione.
+4. L'app genera un codice di 6 caratteri evitando simboli ambigui.
 4. Il DM condivide solo quel codice con il proprio gruppo.
 5. Quando gli altri entrano, le pedine compaiono nella mappa condivisa.
 
@@ -370,6 +372,8 @@ Assets/_Project/Runtime/
 Responsabilità principali:
 
 - `DiscordAuthManager`: inizializzazione SDK e login PKCE;
+- `ProductModeManager`: selezione centrale tra Tavolo 2D e futuro World Builder 3D;
+- `ProductModeOverlay`: scelta modalità, con 3D visibile ma disabilitato;
 - `DiscordSessionManager`: lobby, codice sessione e membership;
 - `PositionSyncManager`: Relay e snapshot autorevoli;
 - `PlayerManager`: stato dei partecipanti e movimento interpolato;
@@ -378,25 +382,38 @@ Responsabilità principali:
 - `DiscordVoiceManager`: chiamata, volumi per utente e regole acustiche;
 - `VoiceRangeCalculator`: curva di distanza e portata.
 
+I confini e i test di accettazione sono descritti nel documento
+[Architettura delle modalità](ARCHITECTURE_MODES_IT.md).
+
 Le classi `PcmRingBuffer`, `RemotePcmStream` e `VoiceAudioSource` restano nel
 progetto come base sperimentale e per i test del vecchio percorso PCM. Non sono
 la coda di riproduzione principale della modalità Discord Direct.
 
 ## 15. Build Windows
 
-Dal menu Unity usa:
+Il comando dipende dal branch. Su `main` usa:
 
 ```text
 D&D Proximity Voice > Build Windows 1.0
 ```
 
-Lo script crea una build release x64 nella cartella:
+che crea la build stabile in:
 
 ```text
 Builds/DnDProximityVoice-Windows-BUILD-1.0
 ```
 
-e prepara anche un archivio ZIP condivisibile. Distribuire l'intera cartella o
+Su `develop/v2` e sui branch `feature/*` usa invece:
+
+```text
+D&D Proximity Voice > Build Windows V2 Preview
+```
+
+Il pacchetto risultante usa il nome
+`Builds/DnDProximityVoice-Windows-V2-PREVIEW` e non deve essere distribuito
+come Build 1.0.
+
+Lo script prepara anche un archivio ZIP condivisibile. Distribuire l'intera cartella o
 lo ZIP, non soltanto il file `.exe`, perché Unity necessita della cartella
 `*_Data` e delle librerie associate.
 

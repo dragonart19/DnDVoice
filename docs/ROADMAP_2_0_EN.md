@@ -11,6 +11,13 @@ acceptance criteria, and results are in the [playtest plan](PLAYTEST_2026_09_06_
 The V2 P0 priorities below belong to the following phase; they are not promises
 to deliver before Sunday. The user performs commits and pushes.
 
+## Active development
+
+[Issue #3](https://github.com/dragonart19/DnDVoice/issues/3) separates Build 1.0,
+2D Tabletop, and 3D World Builder on `feature/3-mode-boundaries`. Its boundaries,
+acceptance criteria, and user-run tests are documented in
+[Mode architecture](ARCHITECTURE_MODES_EN.md).
+
 ## Goal
 
 Version 2.0 evolves D&D Proximity Voice from a 2D voice companion into a hybrid

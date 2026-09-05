@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using DndProximityVoice.Core;
 using DndProximityVoice.Discord;
 using DndProximityVoice.Players;
 using DndProximityVoice.Realtime;
@@ -30,6 +31,7 @@ namespace DndProximityVoice.Map
         private const float MapScrollbarSize = 18f;
 
         private DiscordAuthManager authManager;
+        private ProductModeManager productModeManager;
         private DiscordSessionManager sessionManager;
         private DiscordVoiceManager voiceManager;
         private PlayerManager playerManager;
@@ -82,6 +84,7 @@ namespace DndProximityVoice.Map
         private void Awake()
         {
             authManager = GetComponent<DiscordAuthManager>();
+            productModeManager = GetComponent<ProductModeManager>();
             sessionManager = GetComponent<DiscordSessionManager>();
             voiceManager = GetComponent<DiscordVoiceManager>();
             playerManager = GetComponent<PlayerManager>();
@@ -91,7 +94,9 @@ namespace DndProximityVoice.Map
 
         private void OnGUI()
         {
-            if (sessionManager?.State != DiscordSessionState.Joined || playerManager == null)
+            if (productModeManager?.CurrentMode != ProductMode.Tabletop2D ||
+                sessionManager?.State != DiscordSessionState.Joined ||
+                playerManager == null)
             {
                 return;
             }

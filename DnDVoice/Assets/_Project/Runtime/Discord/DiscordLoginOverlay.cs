@@ -1,3 +1,4 @@
+using DndProximityVoice.Core;
 using DndProximityVoice.UI;
 using UnityEngine;
 
@@ -68,8 +69,8 @@ namespace DndProximityVoice.Discord
                 AppUiTheme.CaptionCentered);
 
             GUI.Label(
-                new Rect(viewport.x + 28f, viewport.yMax - 36f, 360f, 22f),
-                "D&D PROXIMITY VOICE  ·  BUILD 1.0  ·  DISCORD DIRECT",
+                new Rect(viewport.x + 28f, viewport.yMax - 36f, 520f, 22f),
+                $"{BuildInfo.ProductName.ToUpperInvariant()}  ·  {BuildInfo.ReleaseLabel.ToUpperInvariant()}",
                 AppUiTheme.Caption);
             GUI.matrix = previousMatrix;
         }

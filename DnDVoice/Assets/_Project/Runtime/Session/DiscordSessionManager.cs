@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord.Sdk;
+using DndProximityVoice.Core;
 using DndProximityVoice.Discord;
 using DndProximityVoice.Realtime;
 using UnityEngine;
@@ -23,6 +24,7 @@ namespace DndProximityVoice.Session
         private readonly List<SessionMemberSnapshot> members = new List<SessionMemberSnapshot>();
 
         private DiscordAuthManager authManager;
+        private ProductModeManager productModeManager;
         private PositionSyncManager positionSyncManager;
         private string pendingSessionCode = string.Empty;
         private bool pendingAsHost;
@@ -50,9 +52,14 @@ namespace DndProximityVoice.Session
 
         public IReadOnlyList<SessionMemberSnapshot> Members => members;
 
-        public bool CanCreateOrJoin => State == DiscordSessionState.Ready || State == DiscordSessionState.Failed;
+        public bool CanCreateOrJoin =>
+            productModeManager?.CurrentMode == ProductMode.Tabletop2D &&
+            (State == DiscordSessionState.Ready || State == DiscordSessionState.Failed);
 
-        public void Initialize(DiscordAuthManager manager, PositionSyncManager syncManager)
+        public void Initialize(
+            DiscordAuthManager manager,
+            PositionSyncManager syncManager,
+            ProductModeManager modeManager)
         {
             if (authManager != null)
             {
@@ -61,6 +68,7 @@ namespace DndProximityVoice.Session
 
             authManager = manager;
             positionSyncManager = syncManager;
+            productModeManager = modeManager;
             if (authManager == null)
             {
                 SetState(DiscordSessionState.WaitingForDiscord);

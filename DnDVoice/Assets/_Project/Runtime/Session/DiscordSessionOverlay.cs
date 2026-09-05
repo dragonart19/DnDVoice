@@ -1,3 +1,4 @@
+using DndProximityVoice.Core;
 using DndProximityVoice.Discord;
 using DndProximityVoice.UI;
 using UnityEngine;
@@ -13,18 +14,21 @@ namespace DndProximityVoice.Session
         private const float PanelHeight = 590f;
 
         private DiscordAuthManager authManager;
+        private ProductModeManager productModeManager;
         private DiscordSessionManager sessionManager;
         private string joinCode = string.Empty;
 
         private void Awake()
         {
             authManager = GetComponent<DiscordAuthManager>();
+            productModeManager = GetComponent<ProductModeManager>();
             sessionManager = GetComponent<DiscordSessionManager>();
         }
 
         private void OnGUI()
         {
             if (authManager?.State != DiscordAuthState.Connected ||
+                productModeManager?.CurrentMode != ProductMode.Tabletop2D ||
                 sessionManager == null ||
                 sessionManager.State == DiscordSessionState.Joined)
             {
@@ -78,6 +82,15 @@ namespace DndProximityVoice.Session
                 AppUiTheme.Body);
 
             DrawDiscordBadge(new Rect(panel.xMax - 286f, panel.y + 44f, 238f, 40f));
+            if (GUI.Button(
+                    new Rect(panel.xMax - 286f, panel.y + 90f, 238f, 28f),
+                    "←  CAMBIA MODALITÀ",
+                    AppUiTheme.SecondaryButton))
+            {
+                joinCode = string.Empty;
+                productModeManager.ClearSelection();
+            }
+
             AppUiTheme.DrawDivider(new Rect(panel.x + 48f, panel.y + 122f, panel.width - 96f, 1f));
 
             var optionY = panel.y + 152f;

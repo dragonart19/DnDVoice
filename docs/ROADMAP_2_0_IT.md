@@ -11,6 +11,13 @@ i criteri di accettazione e gli esiti sono nel [piano della prova](PLAYTEST_2026
 Le priorità P0 della V2 qui sotto sono relative alla fase successiva: non sono
 impegni da completare prima di domenica. L'utente esegue commit e push.
 
+## Sviluppo attivo
+
+La [issue #3](https://github.com/dragonart19/DnDVoice/issues/3) separa Build 1.0,
+Tavolo 2D e World Builder 3D nel branch `feature/3-mode-boundaries`. I confini,
+i criteri di accettazione e i test affidati all'utente sono nel documento
+[Architettura delle modalità](ARCHITECTURE_MODES_IT.md).
+
 ## Obiettivo
 
 La versione 2.0 evolve D&D Proximity Voice da companion vocale 2D a tavolo

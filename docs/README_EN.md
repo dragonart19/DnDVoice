@@ -2,6 +2,7 @@
 
 [← Main README](../README.md) · [Documentazione italiana](README_IT.md) ·
 [Product Roadmap 2.0](ROADMAP_2_0_EN.md) ·
+[Mode architecture](ARCHITECTURE_MODES_EN.md) ·
 [GitHub Kanban](https://github.com/users/dragonart19/projects/1/views/1)
 
 > Scheduled playtest: **September 6, 2026, 10:30 Europe/Rome, seven participants
@@ -126,8 +127,9 @@ inner `DnDVoice` directory.
 ### Creating a session
 
 1. The DM starts the application and selects **Continue with Discord**.
-2. After login, the DM creates a session.
-3. The application generates a six-character code without ambiguous symbols.
+2. After login, the DM selects **2D Tabletop**.
+3. The DM creates a session.
+4. The application generates a six-character code without ambiguous symbols.
 4. The DM shares only this code with the party.
 5. As members join, their tokens appear on the shared map.
 
@@ -371,6 +373,8 @@ Assets/_Project/Runtime/
 Main responsibilities:
 
 - `DiscordAuthManager`: SDK initialization and PKCE login;
+- `ProductModeManager`: central selection between 2D Tabletop and the future 3D World Builder;
+- `ProductModeOverlay`: mode selection, with 3D visible but disabled;
 - `DiscordSessionManager`: lobbies, session code, and membership;
 - `PositionSyncManager`: Relay and authoritative snapshots;
 - `PlayerManager`: participant state and interpolated movement;
@@ -379,25 +383,37 @@ Main responsibilities:
 - `DiscordVoiceManager`: call state, per-user volume, and acoustic rules;
 - `VoiceRangeCalculator`: distance curve and range calculation.
 
+The boundaries and acceptance tests are documented in
+[Mode architecture](ARCHITECTURE_MODES_EN.md).
+
 `PcmRingBuffer`, `RemotePcmStream`, and `VoiceAudioSource` remain as experimental
 infrastructure and tests for the previous PCM path. They are not the main
 playback queue in Discord Direct mode.
 
 ## 15. Windows build
 
-Use this Unity menu command:
+The command depends on the branch. On `main`, use:
 
 ```text
 D&D Proximity Voice > Build Windows 1.0
 ```
 
-The editor script creates an x64 release build under:
+which creates the stable build under:
 
 ```text
 Builds/DnDProximityVoice-Windows-BUILD-1.0
 ```
 
-It also prepares a shareable ZIP archive. Distribute the full folder or ZIP,
+On `develop/v2` and `feature/*` branches, use instead:
+
+```text
+D&D Proximity Voice > Build Windows V2 Preview
+```
+
+The resulting package is named `Builds/DnDProximityVoice-Windows-V2-PREVIEW`
+and must not be distributed as Build 1.0.
+
+The script also prepares a shareable ZIP archive. Distribute the full folder or ZIP,
 not only the `.exe`, because Unity needs its `*_Data` folder and libraries.
 
 The executable is unsigned, so Windows SmartScreen can display a warning. A
