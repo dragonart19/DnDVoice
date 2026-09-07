@@ -125,6 +125,22 @@ namespace DndProximityVoice.Players
             return true;
         }
 
+        public bool TrySetVoiceMuted(ulong userId, bool muted)
+        {
+            if (!CanMovePlayers || !playersById.TryGetValue(userId, out var player) || player.IsDM) return false;
+            player.IsVoiceMutedByDm = muted;
+            PlayersChanged?.Invoke();
+            return true;
+        }
+
+        internal void ApplyAuthoritativeVoiceMute(ulong userId, bool muted)
+        {
+            if (CanMovePlayers || !playersById.TryGetValue(userId, out var player) || player.IsDM) return;
+            if (player.IsVoiceMutedByDm == muted) return;
+            player.IsVoiceMutedByDm = muted;
+            PlayersChanged?.Invoke();
+        }
+
         public bool TrySetPrivateGroupsIsolated(bool isolated)
         {
             if (!CanMovePlayers)

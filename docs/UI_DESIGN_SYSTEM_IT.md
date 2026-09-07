@@ -72,6 +72,9 @@ Le ombre sono riservate ai pannelli che si sovrappongono alla mappa.
 - `DrawSegmentedMeter`: intensità leggibile anche senza colore;
 - `DrawKeyHint`: tasto e azione associata;
 - `DrawTooltip`: aiuto contestuale vicino al puntatore;
+- `AppUiControls.IconButton`: pulsante coerente con icone Heroicons locali;
+- `AppUiControls.BeginScrollView`: area scorrevole che limita correttamente hover e tooltip;
+- `AppUiPointer`: puntatore interattivo condiviso, ripristinato quando l'app perde il focus;
 - stili `PrimaryButton`, `SecondaryButton`, `DangerButton`, `IconButton`;
 - stili di testo per display, titolo, corpo, caption, codice e pedine.
 
@@ -84,6 +87,7 @@ Il pannello laterale comunica esplicitamente:
 
 - voce connessa, in avvio, in riconnessione, arrestata o in errore;
 - microfono attivo/disattivato;
+- microfono disattivato dal DM, distinto dal mute scelto dall'utente;
 - cuffie attive/disattivate;
 - push-to-talk inattivo, in attesa o in trasmissione;
 - numero di partecipanti Discord;
@@ -122,6 +126,14 @@ Il drawer **Impostazioni audio** consente di:
 Il drawer è disponibile solo con la chiamata connessa. Le impostazioni sono
 applicate dal manager Discord e la UI non manipola pacchetti PCM, code audio,
 attenuazione o networking.
+
+## Toolbar e menu contestuali del DM
+
+Gli strumenti frequenti della mappa usano icone monocromatiche con tooltip,
+stato selezionato e testo di supporto. Le azioni sull'elemento selezionato sono
+mostrate vicino alla pedina o al muro, evitando pannelli permanenti. Conferme di
+eliminazione, espulsione e uscita bloccano l'interfaccia sottostante. Il popup
+consuma mouse e rotellina, perciò nessuna azione attraversa visivamente il menu.
 
 ## Input e accessibilità
 

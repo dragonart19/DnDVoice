@@ -21,8 +21,9 @@ namespace DndProximityVoice.Realtime
     {
         private const string PositionMessageName = "dndpv.positions.v2";
         private const string VoiceModeMessageName = "dndpv.voice-mode.v1";
+        private const string PeerChallengeMessageName = "dndpv.peer.v1";
         private const string RelayConnectionType = "dtls";
-        private const byte ProtocolVersion = 6;
+        private const byte ProtocolVersion = 7;
         private const int MaximumRelayConnections = 7;
         private const int MaximumPlayersInPacket = 8;
         private const float UnreliableSendIntervalSeconds = 1f / 15f;
@@ -40,7 +41,15 @@ namespace DndProximityVoice.Realtime
         private float nextUnreliableSendTime;
         private float nextReliableSnapshotTime;
         private int operationGeneration;
+        private ulong snapshotRevision;
+        private ulong lastReceivedRevision;
         private readonly List<WallNetworkSnapshot> incomingWalls = new List<WallNetworkSnapshot>();
+        private readonly RelayPeerAuthorization peers = new RelayPeerAuthorization();
+        private readonly Dictionary<ulong, float> peerDeadlines = new Dictionary<ulong, float>();
+        private readonly List<ulong> expiredPeers = new List<ulong>();
+        private readonly List<ulong> incomingMemberIds = new List<ulong>();
+        private readonly List<(ulong id, Vector2 position, VoiceMode voice, PrivateVoiceGroup group, bool muted)> incomingPlayers =
+            new List<(ulong, Vector2, VoiceMode, PrivateVoiceGroup, bool)>();
 
         public event Action<PositionSyncState> StateChanged;
 
@@ -257,6 +266,7 @@ namespace DndProximityVoice.Realtime
 
             messaging.RegisterNamedMessageHandler(PositionMessageName, OnPositionSnapshotReceived);
             messaging.RegisterNamedMessageHandler(VoiceModeMessageName, OnVoiceModeRequestReceived);
+            messaging.RegisterNamedMessageHandler(PeerChallengeMessageName, OnPeerChallengeReceived);
             messageHandlerRegistered = true;
         }
 
@@ -278,6 +288,7 @@ namespace DndProximityVoice.Realtime
             {
                 networkManager.CustomMessagingManager?.UnregisterNamedMessageHandler(PositionMessageName);
                 networkManager.CustomMessagingManager?.UnregisterNamedMessageHandler(VoiceModeMessageName);
+                networkManager.CustomMessagingManager?.UnregisterNamedMessageHandler(PeerChallengeMessageName);
                 messageHandlerRegistered = false;
             }
         }
@@ -290,6 +301,14 @@ namespace DndProximityVoice.Realtime
             }
 
             var now = Time.realtimeSinceStartup;
+            expiredPeers.Clear();
+            foreach (var peer in peerDeadlines) if (now >= peer.Value) expiredPeers.Add(peer.Key);
+            foreach (var clientId in expiredPeers)
+            {
+                peerDeadlines.Remove(clientId);
+                peers.Remove(clientId);
+                networkManager.DisconnectClient(clientId, "Identità Discord non verificata. Rientra nella stanza.");
+            }
             if (now >= nextReliableSnapshotTime)
             {
                 SendSnapshotToAll(NetworkDelivery.ReliableSequenced);
@@ -315,16 +334,15 @@ namespace DndProximityVoice.Realtime
 
             using (var writer = CreateSnapshotWriter())
             {
-                networkManager.CustomMessagingManager.SendNamedMessageToAll(
-                    PositionMessageName,
-                    writer,
-                    delivery);
+                foreach (var clientId in networkManager.ConnectedClientsIds)
+                    if (peers.IsAuthenticated(clientId))
+                        networkManager.CustomMessagingManager.SendNamedMessage(PositionMessageName, clientId, writer, delivery);
             }
         }
 
         private void SendSnapshotToClient(ulong clientId)
         {
-            if (networkManager == null || !networkManager.IsHost || clientId == NetworkManager.ServerClientId)
+            if (networkManager == null || !networkManager.IsHost || !peers.IsAuthenticated(clientId))
             {
                 return;
             }
@@ -353,8 +371,9 @@ namespace DndProximityVoice.Realtime
             var wallCount = Mathf.Min(
                 tacticalMapManager?.Walls.Count ?? 0,
                 TacticalMapManager.MaximumWalls);
-            var writer = new FastBufferWriter(14 + playerCount * 18 + wallCount * 26, Allocator.Temp);
+            var writer = new FastBufferWriter(22 + playerCount * 19 + wallCount * 26, Allocator.Temp);
             writer.WriteValueSafe(ProtocolVersion);
+            writer.WriteValueSafe(++snapshotRevision);
             writer.WriteValueSafe((ushort)playerCount);
             writer.WriteValueSafe((byte)(playerManager.PrivateGroupsIsolated ? 1 : 0));
             var written = 0;
@@ -370,6 +389,7 @@ namespace DndProximityVoice.Realtime
                 writer.WriteValueSafe(player.Position.y);
                 writer.WriteValueSafe((byte)player.VoiceMode);
                 writer.WriteValueSafe((byte)player.PrivateGroup);
+                writer.WriteValueSafe((byte)(player.IsVoiceMutedByDm ? 1 : 0));
                 written++;
             }
 
@@ -407,16 +427,17 @@ namespace DndProximityVoice.Realtime
             try
             {
                 reader.ReadValueSafe(out byte version);
+                reader.ReadValueSafe(out ulong revision);
                 reader.ReadValueSafe(out ushort playerCount);
-                if (version != ProtocolVersion || playerCount > MaximumPlayersInPacket)
+                if (version != ProtocolVersion || playerCount > MaximumPlayersInPacket || revision <= lastReceivedRevision)
                 {
                     return;
                 }
 
                 reader.ReadValueSafe(out byte privateGroupsIsolated);
-                playerManager.ApplyAuthoritativePrivateGroupsIsolated(privateGroupsIsolated != 0);
-
                 var snapImmediately = !receivedFirstSnapshot;
+                incomingPlayers.Clear();
+                incomingMemberIds.Clear();
                 for (var index = 0; index < playerCount; index++)
                 {
                     reader.ReadValueSafe(out ulong userId);
@@ -424,24 +445,19 @@ namespace DndProximityVoice.Realtime
                     reader.ReadValueSafe(out float y);
                     reader.ReadValueSafe(out byte voiceModeValue);
                     reader.ReadValueSafe(out byte privateGroupValue);
-                    playerManager.ApplyAuthoritativePosition(userId, new Vector2(x, y), snapImmediately);
+                    reader.ReadValueSafe(out byte muted);
                     var voiceMode = (VoiceMode)voiceModeValue;
-                    if (VoiceModeProfile.IsValid(voiceMode))
-                    {
-                        playerManager.ApplyAuthoritativeVoiceMode(userId, voiceMode);
-                    }
-
                     var privateGroup = (PrivateVoiceGroup)privateGroupValue;
-                    if (PrivateVoiceGroupRules.IsValid(privateGroup))
-                    {
-                        playerManager.ApplyAuthoritativePrivateGroup(userId, privateGroup);
-                    }
+                    if (!VoiceModeProfile.IsValid(voiceMode) || !PrivateVoiceGroupRules.IsValid(privateGroup) ||
+                        !IsFinite(x) || !IsFinite(y) || muted > 1 || userId == 0 || incomingMemberIds.Contains(userId)) return;
+                    incomingMemberIds.Add(userId);
+                    incomingPlayers.Add((userId, new Vector2(x, y), voiceMode, privateGroup, muted != 0));
                 }
 
                 reader.ReadValueSafe(out float mapWidth);
                 reader.ReadValueSafe(out float mapHeight);
                 reader.ReadValueSafe(out ushort wallCount);
-                if (wallCount > TacticalMapManager.MaximumWalls)
+                if (wallCount > TacticalMapManager.MaximumWalls || !IsFinite(mapWidth) || !IsFinite(mapHeight))
                 {
                     return;
                 }
@@ -457,6 +473,7 @@ namespace DndProximityVoice.Realtime
                     reader.ReadValueSafe(out float thicknessMeters);
                     reader.ReadValueSafe(out byte obstacleKindValue);
                     reader.ReadValueSafe(out byte doorStateValue);
+                    if (!IsFinite(startX) || !IsFinite(startY) || !IsFinite(endX) || !IsFinite(endY) || !IsFinite(thicknessMeters)) return;
                     incomingWalls.Add(new WallNetworkSnapshot(
                         wallId,
                         new Vector2(startX, startY),
@@ -472,11 +489,23 @@ namespace DndProximityVoice.Realtime
                                 : DoorState.Closed));
                 }
 
+                // Validate the complete packet before mutating any model or roster.
+                sessionManager.ApplyAuthoritativeMembers(incomingMemberIds);
+                playerManager.ApplyAuthoritativePrivateGroupsIsolated(privateGroupsIsolated != 0);
                 tacticalMapManager?.ApplyAuthoritativeMap(
                     new Vector2(mapWidth, mapHeight),
                     incomingWalls);
 
+                foreach (var player in incomingPlayers)
+                {
+                    playerManager.ApplyAuthoritativePosition(player.id, player.position, snapImmediately);
+                    playerManager.ApplyAuthoritativeVoiceMode(player.id, player.voice);
+                    playerManager.ApplyAuthoritativePrivateGroup(player.id, player.group);
+                    playerManager.ApplyAuthoritativeVoiceMute(player.id, player.muted);
+                }
+
                 receivedFirstSnapshot = true;
+                lastReceivedRevision = revision;
                 if (snapImmediately)
                 {
                     Debug.Log($"Prima posizione Relay ricevuta: {playerCount} giocatori.");
@@ -501,7 +530,7 @@ namespace DndProximityVoice.Realtime
                 reader.ReadValueSafe(out ulong userId);
                 reader.ReadValueSafe(out byte voiceModeValue);
                 var voiceMode = (VoiceMode)voiceModeValue;
-                if (VoiceModeProfile.IsValid(voiceMode) &&
+                if (peers.IsUser(senderClientId, userId) && sessionManager.ContainsMember(userId) && VoiceModeProfile.IsValid(voiceMode) &&
                     playerManager.ApplyRequestedVoiceMode(userId, voiceMode))
                 {
                     positionsDirty = true;
@@ -528,7 +557,16 @@ namespace DndProximityVoice.Realtime
                     Debug.Log($"Giocatore collegato alla mappa Relay: client {clientId}.");
                 }
 
-                SendSnapshotToClient(clientId);
+                if (clientId != NetworkManager.ServerClientId)
+                {
+                    var challenge = new FixedString64Bytes(peers.Challenge(clientId));
+                    peerDeadlines[clientId] = Time.realtimeSinceStartup + 30f;
+                    using (var writer = new FastBufferWriter(80, Allocator.Temp))
+                    {
+                        writer.WriteValueSafe(challenge);
+                        networkManager.CustomMessagingManager.SendNamedMessage(PeerChallengeMessageName, clientId, writer, NetworkDelivery.ReliableSequenced);
+                    }
+                }
             }
             else if (clientId == networkManager.LocalClientId)
             {
@@ -540,13 +578,49 @@ namespace DndProximityVoice.Realtime
 
         private void OnNetworkClientDisconnected(ulong clientId)
         {
+            peers.Remove(clientId);
+            peerDeadlines.Remove(clientId);
             if (networkManager != null && !networkManager.IsHost && clientId == networkManager.LocalClientId &&
                 sessionManager?.State == DiscordSessionState.Joined)
             {
-                Fail(
-                    $"La sincronizzazione della mappa si è disconnessa " +
-                    $"a {Time.realtimeSinceStartup:0.0}s dall'avvio.");
+                sessionManager.EndSessionFromHost(string.IsNullOrEmpty(networkManager.DisconnectReason)
+                    ? "Il collegamento con il Dungeon Master è terminato. Rientra nella stanza per continuare."
+                    : networkManager.DisconnectReason);
             }
+        }
+
+        private static bool IsFinite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+
+        private void OnPeerChallengeReceived(ulong senderClientId, FastBufferReader reader)
+        {
+            if (networkManager == null || networkManager.IsServer || senderClientId != NetworkManager.ServerClientId) return;
+            try
+            {
+                reader.ReadValueSafe(out FixedString64Bytes proof);
+                sessionManager.SendRelayProof(proof.ToString());
+            }
+            catch (OverflowException) { Debug.LogWarning("Verifica Relay incompleta."); }
+        }
+
+        internal void ConfirmDiscordPeer(ulong authorId, string proof)
+        {
+            if (!IsHost || sessionManager?.IsHost != true || !sessionManager.ContainsMember(authorId) ||
+                !peers.TryConfirm(authorId, proof, out var clientId)) return;
+            peerDeadlines.Remove(clientId);
+            SendSnapshotToClient(clientId);
+        }
+
+        internal void DisconnectDiscordUser(ulong userId)
+        {
+            if (!IsHost || sessionManager?.IsHost != true) return;
+            var clientId = peers.ClientFor(userId);
+            if (clientId != 0)
+            {
+                peers.Remove(clientId);
+                peerDeadlines.Remove(clientId);
+                networkManager.DisconnectClient(clientId, "Sei stato espulso dalla stanza dal Dungeon Master.");
+            }
+            positionsDirty = true;
         }
 
         private void OnPlayersChanged()
@@ -611,7 +685,7 @@ namespace DndProximityVoice.Realtime
             }
 
             if (sessionState == DiscordSessionState.Ready ||
-                sessionState == DiscordSessionState.WaitingForDiscord)
+                sessionState == DiscordSessionState.WaitingForDiscord || sessionState == DiscordSessionState.Leaving)
             {
                 StopNetwork(true);
             }
@@ -620,6 +694,9 @@ namespace DndProximityVoice.Realtime
         private void StopNetwork(bool returnToReady)
         {
             operationGeneration++;
+            peers.Clear();
+            peerDeadlines.Clear();
+            snapshotRevision = lastReceivedRevision = 0;
             UnregisterNetworkCallbacks();
             if (networkManager != null && networkManager.IsListening)
             {

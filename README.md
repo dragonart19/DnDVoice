@@ -10,9 +10,9 @@ privati.
 > V2 Preview e partono dalla base 1.0.1 verificata. Ogni modifica alla rete o
 > alla voce richiede una nuova validazione con più client.
 
-La suite V2 è stata eseguita il 7 settembre con Unity `6000.3.8f1` dopo il
-redesign dell'interfaccia: **65/65 test EditMode superati**, zero falliti o
-saltati e nessun errore di compilazione.
+La suite V2 è stata eseguita il 7 settembre con Unity `6000.3.8f1` dopo
+l'integrazione del redesign e del lavoro di `feature-luca`: **70/70 test
+EditMode superati**, zero falliti o saltati e nessun errore di compilazione.
 
 [Documentazione completa in italiano](docs/README_IT.md) ·
 [Full documentation in English](docs/README_EN.md) ·
@@ -46,8 +46,6 @@ pacchetto non è ancora registrato nella repository.
 [Piano e checklist in italiano](docs/PLAYTEST_2026_09_06_IT.md) ·
 [Playtest plan and checklist in English](docs/PLAYTEST_2026_09_06_EN.md).
 La roadmap V2 resta valida; le nuove funzioni 3D seguono questa verifica.
-Modifiche ed esiti vengono documentati nella repository; **commit e push
-rimangono a cura dell'utente**.
 
 ## Direzione 2.0
 
@@ -77,6 +75,8 @@ nel [Kanban GitHub ufficiale](https://github.com/users/dragonart19/projects/1/vi
 | Mappa | ✅ | Mappa condivisa, pedine sincronizzate, trascinamento DM e raggio vocale |
 | Navigazione | ✅ | Mappa ridimensionabile, barre di scorrimento e zoom con `Ctrl + rotellina` |
 | Costruzione | ✅ | Muri a spessore variabile, aggancio alla griglia, porte e stanze chiuse |
+| Azioni DM | ✅ | Toolbar a icone, selezione contestuale, spostamento/rotazione/eliminazione muri, espulsione e mute autorevole dei giocatori |
+| Sicurezza Relay | ✅ | Ogni connessione Relay viene associata all'identità Discord prima di ricevere o inviare lo stato della mappa |
 | Acustica | 🟡 | Muri spessi quasi opachi nella 1.0.1; filtro passa-basso e riverbero sono pianificati |
 | Gruppi | ✅ | Gruppi vocali privati A/B/C come regola di mix dell'app |
 | Salvataggi | ✅ | Salvataggio, caricamento ed eliminazione locale delle mappe |
@@ -119,6 +119,8 @@ entrare e inserisce lo stesso codice.
 - Rotellina: scorrimento verticale; `Shift + rotellina`: orizzontale.
 - `Esc`: chiude le impostazioni audio oppure annulla il muro o la porta in costruzione.
 - `Canc`/`Backspace`: elimina l'elemento di costruzione selezionato.
+- Toolbar mappa: seleziona, costruisce muri/porte, chiude stanze e controlla lo zoom.
+- Menu contestuale: sposta o ruota un muro; il DM può mutare o espellere un giocatore.
 - Menu burger → **COPIA**: copia il codice sessione senza spazi.
 - Menu burger → **UTILITÀ**: apre i log locali; il DM può aprire anche le mappe salvate.
 - **IMPOSTAZIONI AUDIO**: sceglie i dispositivi e regola volume, sensibilità,

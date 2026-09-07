@@ -419,6 +419,8 @@ namespace DndProximityVoice.Map
 
         public event Action MapChanged;
 
+        public event Action MapReplaced;
+
         public IReadOnlyList<WallData> Walls => walls;
 
         public IReadOnlyList<RoomData> Rooms => rooms;
@@ -624,6 +626,58 @@ namespace DndProximityVoice.Map
 
             return false;
         }
+
+        public WallData GetWall(int wallId) => walls.Find(wall => wall.Id == wallId);
+
+        public bool TryMoveWall(int wallId, Vector2 requestedStart)
+        {
+            var wall = GetWall(wallId);
+            if (!CanEdit || wall == null || !IsFinite(requestedStart)) return false;
+            var start = SnapPosition(requestedStart, wallId);
+            return TrySetWallEndpoints(wall, start, start + wall.End - wall.Start);
+        }
+
+        public bool TryRotateWall(int wallId)
+        {
+            var wall = GetWall(wallId);
+            if (!CanEdit || wall == null) return false;
+            var center = (wall.Start + wall.End) * 0.5f;
+            var half = (wall.End - wall.Start) * 0.5f;
+            var rotatedHalf = new Vector2(-half.y, half.x);
+            return TrySetWallEndpoints(wall, center - rotatedHalf, center + rotatedHalf);
+        }
+
+        private bool TrySetWallEndpoints(WallData wall, Vector2 start, Vector2 end)
+        {
+            // Translate the whole segment at map edges; never shorten a wall or a door.
+            var min = Vector2.Min(start, end);
+            var max = Vector2.Max(start, end);
+            if (max.x - min.x > MapBounds.width || max.y - min.y > MapBounds.height) return false;
+            var offset = new Vector2(
+                Mathf.Max(0f, MapBounds.xMin - min.x) + Mathf.Min(0f, MapBounds.xMax - max.x),
+                Mathf.Max(0f, MapBounds.yMin - min.y) + Mathf.Min(0f, MapBounds.yMax - max.y));
+            start += offset;
+            end += offset;
+            foreach (var other in walls)
+            {
+                if (other.Id == wall.Id) continue;
+                if ((Approximately(other.Start, start) && Approximately(other.End, end)) ||
+                    (Approximately(other.Start, end) && Approximately(other.End, start)))
+                {
+                    LastError = "Questo segmento esiste già.";
+                    return false;
+                }
+            }
+            if (Approximately(wall.Start, start) && Approximately(wall.End, end)) return true;
+            wall.Start = start;
+            wall.End = end;
+            LastError = string.Empty;
+            NotifyMapChanged();
+            return true;
+        }
+
+        private static bool IsFinite(Vector2 value) => !float.IsNaN(value.x) && !float.IsInfinity(value.x) &&
+            !float.IsNaN(value.y) && !float.IsInfinity(value.y);
 
         public bool TryInsertDoor(Vector2 position, out WallData door)
         {
@@ -855,7 +909,7 @@ namespace DndProximityVoice.Map
                 Mathf.Clamp(position.y, bounds.yMin, bounds.yMax));
         }
 
-        public Vector2 SnapPosition(Vector2 position)
+        public Vector2 SnapPosition(Vector2 position, int excludedWallId = 0)
         {
             var clamped = ClampPosition(position);
             var endpointSnapDistance = GridSizeMeters * 0.8f;
@@ -864,6 +918,7 @@ namespace DndProximityVoice.Map
             var nearestEndpointDistance = float.MaxValue;
             foreach (var wall in walls)
             {
+                if (wall.Id == excludedWallId) continue;
                 var startDistance = Vector2.Distance(clamped, wall.Start);
                 if (startDistance < nearestEndpointDistance)
                 {
@@ -888,6 +943,7 @@ namespace DndProximityVoice.Map
             var nearestWallDistance = float.MaxValue;
             foreach (var wall in walls)
             {
+                if (wall.Id == excludedWallId) continue;
                 var pointOnWall = ClosestPointOnSegment(clamped, wall.Start, wall.End);
                 var distance = Vector2.Distance(clamped, pointOnWall);
                 if (distance >= nearestWallDistance)
@@ -968,6 +1024,7 @@ namespace DndProximityVoice.Map
 
             nextWallId = maximumId + 1;
             LastError = string.Empty;
+            MapReplaced?.Invoke();
             NotifyMapChanged();
         }
 

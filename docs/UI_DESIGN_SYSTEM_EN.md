@@ -72,6 +72,9 @@ ornaments. Shadows are reserved for panels that overlap the map.
 - `DrawSegmentedMeter`: intensity that remains readable without color;
 - `DrawKeyHint`: key plus associated action;
 - `DrawTooltip`: contextual help near the pointer;
+- `AppUiControls.IconButton`: consistent button using local Heroicons assets;
+- `AppUiControls.BeginScrollView`: clipped scrolling area with correct hover and tooltip bounds;
+- `AppUiPointer`: shared interactive cursor, restored when the application loses focus;
 - `PrimaryButton`, `SecondaryButton`, `DangerButton`, `IconButton` styles;
 - display, title, body, caption, code, and token text styles.
 
@@ -84,6 +87,7 @@ The side panel explicitly communicates:
 
 - connected, starting, reconnecting, stopped, or failed voice;
 - active/muted microphone;
+- microphone disabled by the DM, distinct from user-requested mute;
 - active/deafened output;
 - inactive, waiting, or transmitting push-to-talk;
 - Discord participant count;
@@ -121,6 +125,14 @@ The **Audio settings** drawer allows users to:
 The drawer is enabled only while the call is connected. Settings are applied by
 the Discord manager; UI code never manipulates PCM packets, audio queues,
 attenuation, or networking.
+
+## DM toolbar and contextual menus
+
+Frequent map tools use monochrome icons with tooltips, a selected state, and
+supporting text. Actions for the selected element appear next to the token or
+wall instead of occupying a permanent panel. Delete, kick, and leave
+confirmations block the underlying interface. Popups consume pointer and wheel
+events, so no action passes visually through the menu.
 
 ## Input and accessibility
 

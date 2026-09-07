@@ -33,6 +33,8 @@ namespace DndProximityVoice.Voice
         private readonly HashSet<ulong> speakingUsers = new HashSet<ulong>();
         private readonly object speakingUsersLock = new object();
         private readonly object remoteAudioLock = new object();
+        private readonly HashSet<ulong> audibleSessionUsers = new HashSet<ulong>();
+        private bool selfMuteRequested;
         private readonly Dictionary<ulong, float> directPanByUser = new Dictionary<ulong, float>();
         private readonly Dictionary<ulong, DirectPcmPanner> directPanners =
             new Dictionary<ulong, DirectPcmPanner>();
@@ -95,6 +97,8 @@ namespace DndProximityVoice.Voice
         public IReadOnlyList<DiscordAudioDeviceInfo> InputDevices => inputDevices;
 
         public IReadOnlyList<DiscordAudioDeviceInfo> OutputDevices => outputDevices;
+
+        public bool IsMutedByDm => playerManager?.LocalPlayer?.IsVoiceMutedByDm == true;
 
         public long CapturedFrameCount => Interlocked.Read(ref capturedFrameCount);
 
@@ -227,6 +231,7 @@ namespace DndProximityVoice.Voice
                 call.SetSpeakingStatusChangedCallback(OnSpeakingStatusChanged);
                 call.SetOnVoiceStateChangedCallback(OnVoiceStateChanged);
                 IsSelfMuted = call.GetSelfMute();
+                selfMuteRequested = IsSelfMuted;
                 IsSelfDeafened = call.GetSelfDeaf();
                 using (var vadSettings = call.GetVADThreshold())
                 {
@@ -237,6 +242,10 @@ namespace DndProximityVoice.Voice
                 if (PushToTalkEnabled)
                 {
                     SetSelfMuteInternal(true);
+                }
+                else
+                {
+                    ApplyMicrophoneMute();
                 }
 
                 RefreshAudioSettings();
@@ -281,7 +290,7 @@ namespace DndProximityVoice.Voice
 
         public void ToggleSelfMute()
         {
-            if (call == null || State != DiscordVoiceState.Connected)
+            if (call == null || State != DiscordVoiceState.Connected || IsMutedByDm)
             {
                 return;
             }
@@ -463,16 +472,16 @@ namespace DndProximityVoice.Voice
 
         private void SetSelfMuteInternal(bool muted)
         {
+            selfMuteRequested = muted;
             if (call == null)
             {
-                IsSelfMuted = muted;
+                IsSelfMuted = muted || IsMutedByDm;
                 return;
             }
 
             try
             {
-                IsSelfMuted = muted;
-                call.SetSelfMute(IsSelfMuted);
+                ApplyMicrophoneMute();
                 VoiceParticipantsChanged?.Invoke();
             }
             catch (Exception exception)
@@ -660,6 +669,26 @@ namespace DndProximityVoice.Voice
         private void OnPlayersChanged()
         {
             spatialPositionsDirty = true;
+            lock (remoteAudioLock)
+            {
+                audibleSessionUsers.Clear();
+                if (playerManager != null)
+                    foreach (var player in playerManager.Players)
+                        if (!player.IsVoiceMutedByDm) audibleSessionUsers.Add(player.DiscordUserId);
+            }
+            ApplyMicrophoneMute();
+        }
+
+        private void ApplyMicrophoneMute()
+        {
+            if (call == null) return;
+            try
+            {
+                var muted = selfMuteRequested || IsMutedByDm;
+                if (call.GetSelfMute() != muted) call.SetSelfMute(muted);
+                IsSelfMuted = muted;
+            }
+            catch (ObjectDisposedException) { }
         }
 
         private void OnMapChanged()
@@ -719,7 +748,7 @@ namespace DndProximityVoice.Voice
                     VoiceModeProfile.GetMinimumDistance(remotePlayer.VoiceMode),
                     VoiceModeProfile.GetMaximumDistance(remotePlayer.VoiceMode),
                     directAttenuationCurve);
-                var gain = blockedByPrivateGroup
+                var gain = blockedByPrivateGroup || remotePlayer.IsVoiceMutedByDm
                     ? 0f
                     : distanceGain *
                       VoiceModeProfile.GetOutputGain(remotePlayer.VoiceMode) *
@@ -760,6 +789,8 @@ namespace DndProximityVoice.Voice
             DirectPcmPanner panner;
             lock (remoteAudioLock)
             {
+                outShouldMute = !audibleSessionUsers.Contains(userId);
+                if (outShouldMute) return;
                 directPanByUser.TryGetValue(userId, out horizontalPan);
                 if (!directPanners.TryGetValue(userId, out panner))
                 {
@@ -888,6 +919,8 @@ namespace DndProximityVoice.Voice
             {
                 IsSelfMuted = call.GetSelfMute();
                 IsSelfDeafened = call.GetSelfDeaf();
+                if (!IsMutedByDm) selfMuteRequested = IsSelfMuted;
+                else ApplyMicrophoneMute();
             }
 
             VoiceParticipantsChanged?.Invoke();
@@ -905,6 +938,7 @@ namespace DndProximityVoice.Voice
         {
             if (sessionState == DiscordSessionState.Joined)
             {
+                OnPlayersChanged();
                 if (call == null)
                 {
                     ErrorMessage = string.Empty;
@@ -915,6 +949,8 @@ namespace DndProximityVoice.Voice
             }
 
             voiceRequested = false;
+            selfMuteRequested = false;
+            lock (remoteAudioLock) audibleSessionUsers.Clear();
             automaticRestartAttempts = 0;
             restartVoiceAt = -1f;
             if (call != null && State != DiscordVoiceState.Stopping)

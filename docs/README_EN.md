@@ -49,6 +49,11 @@ EditMode suite was rerun on September 7 at 13:16 UTC with Unity `6000.3.8f1`:
 Integration into `main` was completed by commit `77a9bf4`; recording the
 distributable package remains separate from that validation.
 
+On the V2 branch, after integrating `feature-luca`, the suite was extended with
+Relay-authorization regression coverage and rerun from a clean project copy:
+**70/70 EditMode tests passed**, zero failed or skipped, with error-free runtime
+and test compilation.
+
 | Area | Status | Details |
 | --- | :---: | --- |
 | Discord OAuth | ✅ | PKCE, Public Client, and local redirect |
@@ -58,6 +63,8 @@ distributable package remains separate from that validation.
 | Stereo direction | 🟡 | Available only when the callback supplies at least two PCM channels |
 | Map and tokens | ✅ | DM-authoritative state with client interpolation |
 | Walls, doors, and rooms | ✅ | Drawing, snapping, thickness, door states, and room detection |
+| V2 DM quick actions | ✅ | Icon toolbar and contextual actions for walls, players, mute, and kick |
+| V2 Relay identity | ✅ | Challenge bound to the Discord user before snapshot exchange |
 | Occlusion | 🟡 | Thick walls are nearly opaque; low-pass filtering is not active |
 | Private groups | ✅ | Groups A/B/C applied as a local application mixing rule |
 | Saved maps | ✅ | Local JSON persistence |
@@ -151,7 +158,8 @@ inner `DnDVoice` directory.
 
 The code identifies the Discord lobby, and a deterministic lobby secret is
 derived from it. Lobby metadata records the application, code, host, and
-protocol version. The current protocol version is `6`.
+protocol version. The V2 branch currently uses protocol version `7`; every
+participant must therefore run a build produced from the same branch and commit.
 
 If the DM leaves, map authority is lost. Automatic host migration has not been
 implemented yet.
@@ -217,6 +225,20 @@ Selecting a token displays that character's voice radius.
 The DM is authoritative for map state and token movement. Clients receive
 snapshots through Relay and interpolate their visual position toward each
 target, reducing visible stutter.
+
+### V2 toolbar and quick actions
+
+The toolbar above the map groups selection, wall, door, close-room, delete, and
+zoom controls. Selecting a wall opens a nearby menu with **Move**, **Rotate**,
+**Delete**, and—on doors—a state action. Selecting another participant's token
+lets the DM mute that user for the entire room or request a kick. Destructive
+actions require confirmation, and popups consume pointer events so clicks cannot
+pass through the interface and accidentally edit the map.
+
+DM-enforced mute is included in the authoritative snapshot. The muted client
+keeps its local preference: when the DM restores speaking, the user's previous
+mute/push-to-talk intent is restored, while the DM block cannot be bypassed when
+it is active.
 
 ## 9. Walls, doors, and rooms
 
@@ -350,6 +372,9 @@ Current behavior:
 - a reliable snapshot is sent every two seconds and to newly joined clients;
 - frequent packets are unreliable to reduce latency and traffic;
 - periodic reliable state realigns clients;
+- snapshots carry increasing revisions and are fully validated before application;
+- a Relay challenge is confirmed through the authenticated Discord identity;
+- no snapshot is sent to a peer until that peer has been authenticated;
 - clients visually interpolate movement;
 - the host is authoritative;
 - Relay allows seven connections beyond the host: eight total participants.
@@ -553,7 +578,7 @@ and improvement.
 ### Priority 2 — audio controls
 
 - microphone test and level meter;
-- per-player volume and DM mute for one participant;
+- per-player volume and diagnostics for DM-enforced mute;
 - configurable spatial-audio intensity;
 - low-pass filtering through walls and doors;
 - anti-echo profiles and duplicate-listening diagnostics;
@@ -563,7 +588,7 @@ and improvement.
 
 - multi-selection and group movement;
 - teleport and token locking;
-- per-player mute/isolate controls;
+- temporary isolation and more granular moderation controls;
 - richer door, room-name, and acoustic-property editors;
 - global DM “who hears whom” overview;
 - undo/redo and edit history;

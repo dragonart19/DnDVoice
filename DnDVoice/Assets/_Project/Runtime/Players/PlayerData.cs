@@ -78,6 +78,8 @@ namespace DndProximityVoice.Players
 
         public bool IsConnected { get; internal set; }
 
+        public bool IsVoiceMutedByDm { get; internal set; }
+
         public VoiceMode VoiceMode { get; internal set; } = VoiceMode.Normal;
 
         public PrivateVoiceGroup PrivateGroup { get; internal set; } = PrivateVoiceGroup.None;

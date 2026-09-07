@@ -50,6 +50,11 @@ falliti o saltati e nessun errore di compilazione. L'integrazione in `main` è
 stata completata nel commit `77a9bf4`; la registrazione del pacchetto
 distribuibile resta separata dalla validazione.
 
+Sul branch V2, dopo l'integrazione di `feature-luca`, la suite è stata estesa
+con le regressioni dell'autorizzazione Relay e rieseguita in una copia pulita
+del progetto: **70/70 test EditMode superati**, zero falliti o saltati, con
+compilazione runtime e test senza errori.
+
 | Area | Stato | Dettaglio |
 | --- | :---: | --- |
 | OAuth Discord | ✅ | PKCE, Public Client e redirect locale |
@@ -59,6 +64,8 @@ distribuibile resta separata dalla validazione.
 | Direzione stereo | 🟡 | Disponibile solo quando il callback offre almeno due canali PCM |
 | Mappa e pedine | ✅ | Stato autorevole del DM e interpolazione lato client |
 | Muri, porte e stanze | ✅ | Disegno, snap, spessore, stati porta e rilevamento stanze |
+| Azioni rapide DM V2 | ✅ | Toolbar a icone e menu contestuale per muri, giocatori, mute ed espulsione |
+| Identità Relay V2 | ✅ | Challenge associata all'utente Discord prima dello scambio degli snapshot |
 | Occlusione | 🟡 | Muri spessi quasi opachi; filtro passa-basso non attivo |
 | Gruppi privati | ✅ | Gruppi A/B/C applicati come regola audio locale |
 | Mappe salvate | ✅ | Persistenza JSON locale al computer |
@@ -152,7 +159,8 @@ Unity vero e proprio è la cartella interna `DnDVoice`.
 
 Il codice individua la lobby Discord; un segreto deterministico viene derivato
 dal codice. La lobby pubblica metadati di applicazione, codice, host e versione
-del protocollo. Il protocollo attuale è la versione `6`.
+del protocollo. Sul branch V2 il protocollo attuale è la versione `7`; tutti i
+partecipanti devono quindi usare una build generata dallo stesso branch e commit.
 
 Se il DM esce, viene meno l'autorità della mappa e la sessione non offre ancora
 una migrazione automatica dell'host.
@@ -219,6 +227,21 @@ Selezionando una pedina viene mostrato il suo raggio vocale.
 Il DM è autorevole per lo stato della mappa e per lo spostamento delle pedine.
 I client ricevono snapshot tramite Relay e interpolano la posizione verso il
 bersaglio, riducendo gli scatti visivi.
+
+### Toolbar e azioni rapide V2
+
+La toolbar sopra la mappa raccoglie selezione, muri, porte, chiusura stanza,
+eliminazione e zoom. Selezionando un muro compare un menu vicino all'elemento
+con **Sposta**, **Ruota**, **Elimina** e, per le porte, cambio di stato.
+Selezionando la pedina di un altro partecipante, il DM può disattivarne il
+microfono per tutta la stanza oppure richiedere l'espulsione. Le azioni
+distruttive mostrano una conferma e i popup consumano gli eventi del mouse, così
+il clic non attraversa l'interfaccia e non modifica accidentalmente la mappa.
+
+Il mute imposto dal DM viene sincronizzato nello snapshot autorevole. Il client
+mutato conserva la propria preferenza locale: quando il DM lo riattiva torna
+allo stato mute/push-to-talk scelto dall'utente, senza poter aggirare il blocco
+mentre è attivo.
 
 ## 9. Muri, porte e stanze
 
@@ -349,6 +372,9 @@ Dettagli attuali:
 - snapshot affidabile ogni 2 secondi e all'ingresso di un nuovo client;
 - pacchetti frequenti non affidabili per contenere latenza e traffico;
 - snapshot periodici affidabili per riallineare lo stato;
+- revisione crescente e validazione completa prima di applicare uno snapshot;
+- challenge Relay confermata dall'identità Discord prima di autorizzare il peer;
+- nessuno snapshot viene inviato a un peer non ancora autenticato;
 - interpolazione visiva sul client;
 - host autorevole;
 - Relay configurato per 7 connessioni oltre all'host: 8 partecipanti totali.
@@ -555,7 +581,7 @@ un'area da validare e migliorare.
 ### Priorità 2 — controlli audio
 
 - test microfono e indicatore di livello;
-- volume per giocatore e mute DM sul singolo partecipante;
+- volume per singolo giocatore e diagnostica del mute imposto dal DM;
 - intensità audio spaziale configurabile;
 - filtro passa-basso attraverso muri e porte;
 - profili anti-eco e diagnostica del doppio ascolto;
@@ -565,7 +591,7 @@ un'area da validare e migliorare.
 
 - selezione multipla e movimento di gruppo;
 - teletrasporto e blocco pedine;
-- mute/isola per singolo giocatore;
+- isolamento temporaneo e controlli di moderazione più granulari;
 - editor più ricco per porte, nomi stanza e proprietà acustiche;
 - vista globale “chi sente chi” per il DM;
 - annulla/ripristina e cronologia delle modifiche;

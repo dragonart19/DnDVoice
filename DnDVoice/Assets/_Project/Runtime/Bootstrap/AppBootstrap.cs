@@ -52,6 +52,7 @@ namespace DndProximityVoice.Bootstrap
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = TargetFrameRate;
             ConfigureLowLatencyAudio();
+            gameObject.AddComponent<AppUiPointer>();
 
             if (!DiscordSdkAvailability.IsIntegrated)
             {
