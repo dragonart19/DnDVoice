@@ -36,8 +36,9 @@ Follow-up work starts from `main` on
 `hotfix/1.0-playtest-audio-stability` as **Build 1.0.1 Hotfix**. It includes
 stronger thick-wall occlusion, preservation of the lobby and Relay during
 short Discord reconnections, three bounded automatic voice-call retries, and
-diagnostics with elapsed runtime. V2 remains isolated on `develop/v2` until
-the user validates this hotfix.
+diagnostics with elapsed runtime. V2 remains isolated on `develop/v2`. On
+September 7, the user confirmed the hotfix A–D checklist; the remaining step
+is integration into `main`, followed by realigning `develop/v2`.
 
 ## Inspected baseline
 
@@ -202,7 +203,7 @@ local run Unity resolved that directory to
 | Code copy, utilities, and menu input blocking | Implemented; automated tests and local visual check complete |
 | Real seven-person test and voice continuity | Session completed with the fallback; `rc1` was rejected during preflight because of occlusion and disconnects |
 | Commit and push of the `rc1` preparation | Completed by the user on `main`, commit `6d2304a` |
-| Build 1.0.1 Hotfix | Local implementation in progress; **53 expected tests**, not yet run by the user |
+| Build 1.0.1 Hotfix | Commit `9ba9a1c` published on the hotfix branch; A–D checklist confirmed by the user; suite rerun September 7 at 13:16 UTC: **53/53 EditMode tests**, zero failed or skipped; integration into `main` remains |
 
 Verification ran in Unity `6000.3.8f1`, batch EditMode. Unity exited with code
 `0`, with no compilation errors. The local report is
@@ -221,9 +222,10 @@ Verification ran in Unity `6000.3.8f1`, batch EditMode. Unity exited with code
 | RemotePcmStreamTests | 1 |
 | MapMenuInputTests | 5 |
 
-Build 1.0.1 adds six `RecoveryPolicyTests`, increasing the expected total from
-47 to 53. This is the expected discovered-test count, not a result; it must not
-be marked passing until the user runs the suite.
+Build 1.0.1 adds six `RecoveryPolicyTests`, increasing the total from 47 to 53.
+On September 7 at 13:16 UTC, the batch suite on Unity `6000.3.8f1` passed
+**53/53** tests, with zero failures and zero skipped tests. The local report is
+`DnDVoice/Logs/hotfix-1.0.1-editmode-results.xml` and is ignored by Git.
 
 The nine tests in the four PCM suites cover local components, including the
 previous experimental playback path. They do not measure Discord Direct call

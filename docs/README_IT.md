@@ -40,14 +40,19 @@ prossimità, muri, porte, stanze, gruppi e salvataggi locali.
 
 Il gruppo di sette persone ha valutato positivamente il prodotto, ma il
 candidato più recente ha mostrato occlusione insufficiente e disconnessioni
-prima della partita. Questo hotfix non è ancora una release finale: deve essere
-verificato con almeno due PC e due account Discord prima della pubblicazione.
+prima della partita. Il 7 settembre l'utente ha confermato il completamento
+della checklist A–D dell'hotfix con due client, inclusi occlusione,
+riconnessione breve e durata. La suite EditMode è stata rieseguita il 7
+settembre alle 13:16 UTC con Unity `6000.3.8f1`: **53/53 superati**, zero
+falliti o saltati e nessun errore di compilazione. L'integrazione in `main` e
+la registrazione del pacchetto distribuibile restano separate dalla
+validazione.
 
 | Area | Stato | Dettaglio |
 | --- | :---: | --- |
 | OAuth Discord | ✅ | PKCE, Public Client e redirect locale |
 | Sessioni | ✅ | Crea/entra con codice di 6 caratteri |
-| Voce Discord Direct | 🟡 | Chiamata nativa e tre tentativi automatici di ripristino, da validare |
+| Voce Discord Direct | ✅ | Chiamata nativa e tre tentativi automatici di ripristino, validata nella checklist A–D |
 | Attenuazione per distanza | ✅ | Calcolo locale per ogni partecipante |
 | Direzione stereo | 🟡 | Disponibile solo quando il callback offre almeno due canali PCM |
 | Mappa e pedine | ✅ | Stato autorevole del DM e interpolazione lato client |

@@ -38,7 +38,8 @@ Il follow-up viene sviluppato da `main` sul branch
 occlusione più forte per i muri spessi, conservazione di lobby/Relay durante le
 brevi riconnessioni Discord, tre tentativi automatici e limitati della chiamata
 vocale e messaggi diagnostici con il tempo trascorso dall'avvio. La V2 resta
-separata su `develop/v2` finché questo hotfix non supera i test dell'utente.
+separata su `develop/v2`. Il 7 settembre l'utente ha confermato la checklist
+A–D dell'hotfix; resta da integrarlo in `main` e poi riallineare `develop/v2`.
 
 ## Base esaminata
 
@@ -204,7 +205,7 @@ del prodotto. Nell'esecuzione locale Unity ha risolto la cartella come
 | Copia codice, utilità e blocco input menu | Implementati; test automatici e controllo visivo locale completati |
 | Prova reale a sette e continuità vocale | Partita completata con fallback; `rc1` respinto nel controllo iniziale per occlusione e disconnessioni |
 | Commit e push della preparazione `rc1` | Completati dall'utente su `main`, commit `6d2304a` |
-| Build 1.0.1 Hotfix | Implementazione locale in corso; **53 test attesi**, non ancora eseguiti dall'utente |
+| Build 1.0.1 Hotfix | Commit `9ba9a1c` pubblicato sul branch hotfix; checklist A–D confermata dall'utente; suite rieseguita il 7 settembre alle 13:16 UTC: **53/53 test EditMode**, zero falliti o saltati; integrazione in `main` da completare |
 
 La verifica è stata eseguita con Unity `6000.3.8f1` in modalità batch EditMode;
 Unity ha terminato con codice `0`, senza errori di compilazione. Il report
@@ -224,9 +225,10 @@ locale più recente è
 | RemotePcmStreamTests | 1 |
 | MapMenuInputTests | 5 |
 
-La Build 1.0.1 aggiunge sei casi `RecoveryPolicyTests`; il totale atteso passa
-da 47 a 53. Questo numero descrive i test scoperti previsti, non un esito: non
-va marcato come superato finché l'utente non esegue la suite.
+La Build 1.0.1 aggiunge sei casi `RecoveryPolicyTests`; il totale passa da 47 a
+53. Il 7 settembre alle 13:16 UTC la suite batch su Unity `6000.3.8f1` ha
+superato **53/53** test, zero falliti e zero saltati. Il report locale è
+`DnDVoice/Logs/hotfix-1.0.1-editmode-results.xml`, escluso da Git.
 
 I nove test delle quattro suite PCM verificano componenti locali, anche del
 percorso sperimentale precedente: non misurano qualità o latenza della chiamata

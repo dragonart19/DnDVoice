@@ -43,7 +43,16 @@ each line and does not prove one shared cause for every event.
 
 ## User verification
 
-Do not publish 1.0.1 before completing at least A–D.
+On September 7, 2026, the user confirmed the complete A–D checklist: no
+compilation errors, a two-client wall profile, short disconnect recovery, and
+a test lasting at least 30 minutes. At 13:16 UTC, the suite was rerun in batch
+with Unity `6000.3.8f1`: **53/53 EditMode tests passed**, zero failed or
+skipped, with no compilation errors. The local report is
+`DnDVoice/Logs/hotfix-1.0.1-editmode-results.xml` and is ignored by Git. Manual
+test timestamps and the 1.0.1 package hash are not recorded and are not
+inferred after the fact.
+
+The following sections remain as a repeatable procedure for future builds.
 
 ### A. Compilation and local suite
 
@@ -98,6 +107,7 @@ record the commit, size, and SHA-256; do not overwrite the fallback package.
 ## Git
 
 Work remains on `hotfix/1.0-playtest-audio-stability`, derived from `main`.
-The user runs tests, commits, and pushes. After validation, the fix can enter
-`main`; only then should compatible changes be integrated into `develop/v2`
-before resuming the V2 roadmap.
+Commit `9ba9a1c` was published by the user on the remote branch and the A–D
+validation was confirmed. The fix must now enter `main`; `develop/v2` must be
+realigned immediately afterward before resuming the V2 roadmap. Commits,
+merges, and pushes remain the user's responsibility.

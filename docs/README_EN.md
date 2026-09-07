@@ -40,14 +40,18 @@ doors, rooms, groups, and local saves.
 
 The seven-person group responded positively to the product, but the newest
 candidate showed insufficient occlusion and disconnections before play. This
-hotfix is not a final production release: it must be validated with at least
-two PCs and two Discord accounts before publication.
+hotfix's A–D checklist was confirmed complete by the user on September 7 with
+two clients, including occlusion, short reconnection, and duration. The
+EditMode suite was rerun on September 7 at 13:16 UTC with Unity `6000.3.8f1`:
+**53/53 passed**, zero failed or skipped, with no compilation errors.
+Integration into `main` and recording the distributable package remain
+separate from that validation.
 
 | Area | Status | Details |
 | --- | :---: | --- |
 | Discord OAuth | ✅ | PKCE, Public Client, and local redirect |
 | Sessions | ✅ | Create/join with a six-character code |
-| Discord Direct voice | 🟡 | Native playback plus three automatic recovery attempts, pending validation |
+| Discord Direct voice | ✅ | Native playback plus three automatic recovery attempts, validated through checklist A–D |
 | Distance attenuation | ✅ | Computed locally for every participant |
 | Stereo direction | 🟡 | Available only when the callback supplies at least two PCM channels |
 | Map and tokens | ✅ | DM-authoritative state with client interpolation |

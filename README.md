@@ -5,9 +5,9 @@ accesso e trasporto vocale, mentre una mappa tattica condivisa determina chi
 può sentire chi in base a distanza, modalità di voce, muri, porte e gruppi
 privati.
 
-> **Stato:** Build 1.0.1 Hotfix · Discord Direct — correzioni successive alla
-> prova reale del 6 settembre, ancora da validare con più client prima della
-> pubblicazione. La V2 rimane separata su `develop/v2`.
+> **Stato:** Build 1.0.1 Hotfix · Discord Direct — validazione A–D confermata
+> dall'utente il 7 settembre; integrazione in `main` ancora da completare. La
+> V2 rimane separata su `develop/v2`.
 
 [Documentazione completa in italiano](docs/README_IT.md) ·
 [Full documentation in English](docs/README_EN.md) ·
@@ -28,8 +28,12 @@ La partita è proseguita con una build precedente conservata su GitHub.
 Il registro locale del candidato contiene `JoinTimeout`, disconnessione Relay e
 lobby Discord non più disponibile. La Build 1.0.1 rafforza l'occlusione,
 conserva la sessione durante le riconnessioni brevi del client Discord e tenta
-fino a tre ripristini automatici della voce. Queste correzioni non sono ancora
-certificate da una nuova prova multi-client prolungata.
+fino a tre ripristini automatici della voce. L'utente ha confermato il 7
+settembre il completamento della checklist A–D: confronto acustico a due client,
+recupero dopo interruzione breve e prova prolungata. La suite EditMode è stata
+poi rieseguita con Unity `6000.3.8f1` alle 13:16 UTC: **53/53 test superati**,
+zero falliti o saltati e nessun errore di compilazione. L'hash del nuovo
+pacchetto non è ancora registrato nella repository.
 
 [Piano e checklist in italiano](docs/PLAYTEST_2026_09_06_IT.md) ·
 [Playtest plan and checklist in English](docs/PLAYTEST_2026_09_06_EN.md).
@@ -59,7 +63,7 @@ nel [Kanban GitHub ufficiale](https://github.com/users/dragonart19/projects/1/vi
 | --- | :---: | --- |
 | Accesso | ✅ | OAuth2 Discord con PKCE, senza client secret nel progetto |
 | Sessioni | ✅ | Creazione e ingresso tramite codice di 6 caratteri |
-| Voce | 🟡 | Chiamata Discord con attenuazione e tre tentativi automatici di ripristino, da validare |
+| Voce | ✅ | Chiamata Discord con attenuazione e tre tentativi automatici di ripristino, validata nella checklist A–D |
 | Audio spaziale | 🟡 | Volume posizionale attivo; la direzione stereo dipende dai canali PCM forniti dal SDK |
 | Mappa | ✅ | Mappa condivisa, pedine sincronizzate, trascinamento DM e raggio vocale |
 | Navigazione | ✅ | Mappa ridimensionabile, barre di scorrimento e zoom con `Ctrl + rotellina` |
