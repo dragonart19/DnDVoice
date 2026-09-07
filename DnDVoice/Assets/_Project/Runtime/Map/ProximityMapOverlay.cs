@@ -943,7 +943,7 @@ namespace DndProximityVoice.Map
                     start,
                     end,
                     thicknessPixels,
-                    wall.Id == selectedWallId ? AppUiTheme.AccentBright : new Color32(137, 127, 105, 255),
+                    wall.Id == selectedWallId ? AppUiTheme.AccentBright : (Color)new Color32(137, 127, 105, 255),
                     wall.Id == selectedWallId);
             }
         }
