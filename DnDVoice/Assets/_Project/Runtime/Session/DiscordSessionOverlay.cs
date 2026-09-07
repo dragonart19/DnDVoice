@@ -32,6 +32,7 @@ namespace DndProximityVoice.Session
             }
 
             var previousMatrix = GUI.matrix;
+            AppUiControls.BeginSurface();
             AppUiTheme.BeginResponsive(ReferenceWidth, ReferenceHeight, out var viewport);
             AppUiTheme.DrawBackdrop(viewport);
             DrawTopBrand(viewport);
@@ -63,6 +64,7 @@ namespace DndProximityVoice.Session
                     break;
             }
 
+            AppUiControls.EndSurface(viewport);
             GUI.matrix = previousMatrix;
         }
 
@@ -111,7 +113,7 @@ namespace DndProximityVoice.Session
                 "✓  Codice privato di 6 caratteri\n✓  Controllo completo della mappa",
                 AppUiTheme.Caption);
 
-            if (GUI.Button(
+            if (AppUiControls.Button(
                     new Rect(rect.x + 28f, rect.yMax - 76f, rect.width - 56f, 50f),
                     "CREA SESSIONE   →",
                     AppUiTheme.PrimaryButton))
@@ -152,7 +154,7 @@ namespace DndProximityVoice.Session
                 SessionCode.IsValid(joinCode) ? AppUiTheme.Success : AppUiTheme.Muted);
 
             GUI.enabled = SessionCode.IsValid(joinCode);
-            if (GUI.Button(
+            if (AppUiControls.Button(
                     new Rect(rect.x + 28f, rect.yMax - 76f, rect.width - 56f, 50f),
                     "ENTRA NELLA SESSIONE   →",
                     AppUiTheme.PrimaryButton))
@@ -221,7 +223,7 @@ namespace DndProximityVoice.Session
                 sessionManager.ErrorMessage,
                 AppUiTheme.BodyCentered,
                 AppUiTheme.Danger);
-            if (GUI.Button(
+            if (AppUiControls.Button(
                     new Rect(center.x - 150f, center.y + 90f, 300f, 50f),
                     "TORNA INDIETRO",
                     AppUiTheme.PrimaryButton))

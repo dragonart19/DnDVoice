@@ -12,7 +12,7 @@ using UnityEngine;
 namespace DndProximityVoice.Map
 {
     [DisallowMultipleComponent]
-    public sealed class ProximityMapOverlay : MonoBehaviour
+    public sealed partial class ProximityMapOverlay : MonoBehaviour
     {
         private const float ReferenceWidth = 1180f;
         private const float ReferenceHeight = 720f;
@@ -48,7 +48,6 @@ namespace DndProximityVoice.Map
         private bool utilityMessageIsError;
         private bool wallBuildMode;
         private bool doorPlacementMode;
-        private bool wallEraseMode;
         private bool wallDragActive;
         private Vector2 wallDragStart;
         private Vector2 wallDragCurrent;
@@ -87,12 +86,16 @@ namespace DndProximityVoice.Map
             playerManager = GetComponent<PlayerManager>();
             positionSyncManager = GetComponent<PositionSyncManager>();
             tacticalMapManager = GetComponent<TacticalMapManager>();
+            if (sessionManager != null) sessionManager.StateChanged += OnSessionChanged;
+            if (tacticalMapManager != null) tacticalMapManager.MapReplaced += ClearSelection;
+            UnityEngine.SceneManagement.SceneManager.activeSceneChanged += OnActiveSceneChanged;
         }
 
         private void OnGUI()
         {
             if (sessionManager?.State != DiscordSessionState.Joined || playerManager == null)
             {
+                ResetInteractions();
                 return;
             }
 
@@ -101,6 +104,7 @@ namespace DndProximityVoice.Map
             HandleVoiceModeShortcuts();
 
             var previousMatrix = GUI.matrix;
+            AppUiControls.BeginSurface();
             AppUiTheme.BeginResponsive(ReferenceWidth, ReferenceHeight, out var viewport);
             AppUiTheme.DrawBackdrop(viewport);
 
@@ -120,12 +124,21 @@ namespace DndProximityVoice.Map
                 rightRect.x - root.x - PanelGap,
                 bodyHeight);
 
+            var wasEnabled = GUI.enabled;
+            GUI.enabled = wasEnabled && !burgerMenuOpen && !ConfirmationOpen;
+            AppUiControls.PointerEnabled = GUI.enabled;
             DrawMap(mapRect);
             DrawVoicePanel(rightRect);
             DrawHeader(headerRect);
             DrawFooter(footerRect);
+            GUI.enabled = wasEnabled && !ConfirmationOpen;
+            AppUiControls.PointerEnabled = GUI.enabled;
             DrawBurgerMenu(root);
+            GUI.enabled = wasEnabled;
+            AppUiControls.PointerEnabled = true;
+            DrawConfirmation(viewport);
 
+            AppUiControls.EndSurface(viewport);
             GUI.matrix = previousMatrix;
         }
 
@@ -223,7 +236,7 @@ namespace DndProximityVoice.Map
             const float bottomHeight = 18f;
             var scrollRect = new Rect(rect.x + 12f, rect.y + 94f, rect.width - 20f, rect.height - 94f - bottomHeight);
             var contentHeight = Mathf.Max(scrollRect.height, playerManager.Players.Count * 72f + 4f);
-            playersScroll = GUI.BeginScrollView(
+            playersScroll = AppUiControls.BeginScrollView(
                 scrollRect,
                 playersScroll,
                 new Rect(0f, 0f, scrollRect.width - 16f, contentHeight));
@@ -235,7 +248,7 @@ namespace DndProximityVoice.Map
                 y += 72f;
             }
 
-            GUI.EndScrollView();
+            AppUiControls.EndScrollView();
 
         }
 
@@ -275,9 +288,9 @@ namespace DndProximityVoice.Map
                 roleColor,
                 AppUiTheme.EyebrowSmallCentered);
 
-            if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
+            if (AppUiControls.Button(rect, GUIContent.none, GUIStyle.none))
             {
-                selectedPlayerId = player.DiscordUserId;
+                SelectPlayer(player.DiscordUserId);
                 playersDrawerOpen = false;
                 savedMapsDrawerOpen = false;
                 utilitiesDrawerOpen = false;
@@ -330,7 +343,7 @@ namespace DndProximityVoice.Map
                 : mapAlreadyExists
                     ? "SOVRASCRIVI MAPPA"
                     : "SALVA MAPPA";
-            if (GUI.Button(
+            if (AppUiControls.Button(
                     new Rect(rect.x + 20f, rect.y + 150f, rect.width - 40f, 40f),
                     saveLabel,
                     overwriteConfirmed ? AppUiTheme.DangerButton : AppUiTheme.PrimaryButton))
@@ -386,7 +399,7 @@ namespace DndProximityVoice.Map
                 rect.width - 20f,
                 rect.height - 286f);
             var contentHeight = Mathf.Max(scrollRect.height, savedMapNames.Count * 70f + 4f);
-            savedMapsScroll = GUI.BeginScrollView(
+            savedMapsScroll = AppUiControls.BeginScrollView(
                 scrollRect,
                 savedMapsScroll,
                 new Rect(0f, 0f, scrollRect.width - 16f, contentHeight));
@@ -410,7 +423,7 @@ namespace DndProximityVoice.Map
                 }
             }
 
-            GUI.EndScrollView();
+            AppUiControls.EndScrollView();
         }
 
         private void DrawSavedMapListItem(string mapName, Rect rect)
@@ -422,7 +435,7 @@ namespace DndProximityVoice.Map
                 AppUiTheme.BodyBoldClip);
 
             var loadPending = pendingLoadMapName == mapName;
-            if (GUI.Button(
+            if (AppUiControls.Button(
                     new Rect(rect.xMax - 166f, rect.y + 12f, 88f, 38f),
                     loadPending ? "CONFERMA" : "CARICA",
                     loadPending ? AppUiTheme.PrimaryButton : AppUiTheme.SecondaryButton))
@@ -452,7 +465,7 @@ namespace DndProximityVoice.Map
             }
 
             var deletePending = pendingDeleteMapName == mapName;
-            if (GUI.Button(
+            if (AppUiControls.Button(
                     new Rect(rect.xMax - 70f, rect.y + 12f, 58f, 38f),
                     deletePending ? "OK?" : "X",
                     AppUiTheme.DangerButton))
@@ -535,60 +548,24 @@ namespace DndProximityVoice.Map
             var y = rect.y + 350f;
             if (voiceManager.State == DiscordVoiceState.Connected)
             {
-                if (GUI.Button(
+                var microphoneEnabled = GUI.enabled;
+                GUI.enabled = microphoneEnabled && !voiceManager.IsMutedByDm;
+                if (AppUiControls.Button(
                         new Rect(rect.x + 18f, y, rect.width - 36f, 44f),
-                        voiceManager.IsSelfMuted ? "RIATTIVA MICROFONO" : "DISATTIVA MICROFONO",
+                        voiceManager.IsMutedByDm ? "AUDIO DISATTIVATO DAL DM" : voiceManager.IsSelfMuted ? "RIATTIVA MICROFONO" : "DISATTIVA MICROFONO",
                         voiceManager.IsSelfMuted ? AppUiTheme.PrimaryButton : AppUiTheme.SecondaryButton))
                 {
                     voiceManager.ToggleSelfMute();
                 }
 
-                if (GUI.Button(
-                        new Rect(rect.x + 18f, rect.yMax - 112f, rect.width - 36f, 40f),
-                        "DISCONNETTI VOCE",
-                        AppUiTheme.SecondaryButton))
-                {
-                    voiceManager.StopVoice();
-                }
-            }
-            else if (voiceManager.State == DiscordVoiceState.Ready || voiceManager.State == DiscordVoiceState.Failed)
-            {
-                if (voiceManager.State == DiscordVoiceState.Failed)
-                {
-                    AppUiTheme.DrawLabel(
-                        new Rect(rect.x + 22f, y, rect.width - 44f, 58f),
-                        voiceManager.ErrorMessage,
-                        AppUiTheme.CaptionCentered,
-                        AppUiTheme.Danger);
-                    y += 68f;
-                }
-
-                if (GUI.Button(
-                        new Rect(rect.x + 18f, y, rect.width - 36f, 46f),
-                        voiceManager.State == DiscordVoiceState.Failed ? "RIPROVA VOCE" : "ATTIVA VOCE",
-                        AppUiTheme.PrimaryButton))
-                {
-                    voiceManager.StartVoice();
-                }
+                GUI.enabled = microphoneEnabled;
             }
             else
             {
-                GUI.Label(
-                    new Rect(rect.x + 20f, y, rect.width - 40f, 42f),
-                    "Connessione della voce in corso…",
-                    AppUiTheme.CaptionCentered);
-            }
-
-            if (GUI.Button(
-                    new Rect(rect.x + 18f, rect.yMax - 60f, rect.width - 36f, 42f),
-                    "ESCI DALLA SESSIONE",
-                    AppUiTheme.DangerButton))
-            {
-                voiceManager.StopVoice();
-                sessionManager.LeaveSession();
+                GUI.Label(new Rect(rect.x + 22f, y, rect.width - 44f, 58f),
+                    voiceManager.State == DiscordVoiceState.Failed ? voiceManager.ErrorMessage : "Apri il menu del tavolo per attivare la voce.", AppUiTheme.CaptionCentered);
             }
         }
-
         private void DrawVoiceModeSelector(Rect rect)
         {
             GUI.Box(rect, GUIContent.none, AppUiTheme.CardSoft);
@@ -633,7 +610,7 @@ namespace DndProximityVoice.Map
             VoiceMode mode,
             VoiceMode currentMode)
         {
-            if (GUI.Button(
+            if (AppUiControls.Button(
                     rect,
                     label,
                     mode == currentMode ? AppUiTheme.PrimaryButton : AppUiTheme.SecondaryButton))
@@ -729,13 +706,18 @@ namespace DndProximityVoice.Map
                 mapSizeMeters.x * mapPixelsPerMeter,
                 mapSizeMeters.y * mapPixelsPerMeter);
             EnsureMapScroll(initialCanvasSize, viewportRect.size, mapSizeMeters);
+            mapViewportSize = viewportRect.size;
+            UpdateQuickMenuRect(viewportRect, initialCanvasSize);
+            pointerOverQuickMenu = quickMenuVisible && quickMenuRect.Contains(Event.current.mousePosition);
             HandleMapWheel(viewportRect, mapSizeMeters, Event.current);
             var canvasRect = new Rect(
                 0f,
                 0f,
                 mapSizeMeters.x * mapPixelsPerMeter,
                 mapSizeMeters.y * mapPixelsPerMeter);
-            var pointerInsideViewport = viewportRect.Contains(Event.current.mousePosition);
+            UpdateQuickMenuRect(viewportRect, canvasRect.size);
+            pointerOverQuickMenu = quickMenuVisible && quickMenuRect.Contains(Event.current.mousePosition);
+            var pointerInsideViewport = viewportRect.Contains(Event.current.mousePosition) && !pointerOverQuickMenu;
 
             GUI.Box(viewportRect, GUIContent.none, AppUiTheme.CardSoft);
             GUI.BeginGroup(viewportRect);
@@ -761,6 +743,7 @@ namespace DndProximityVoice.Map
 
             DrawWalls(canvasRect, mapPixelsPerMeter);
             DrawWallPreview(canvasRect, mapPixelsPerMeter);
+            DrawMovePreview(canvasRect, mapPixelsPerMeter, pointerInsideViewport);
 
             foreach (var player in playerManager.Players)
             {
@@ -782,7 +765,9 @@ namespace DndProximityVoice.Map
                 MapScrollbarSize,
                 viewportRect.height);
             var previousEnabled = GUI.enabled;
-            GUI.enabled = previousEnabled && !burgerMenuOpen;
+            GUI.enabled = previousEnabled && !burgerMenuOpen && !ConfirmationOpen;
+            AppUiControls.Hover(horizontalRect);
+            AppUiControls.Hover(verticalRect);
             mapScroll.x = GUI.HorizontalScrollbar(
                 horizontalRect,
                 mapScroll.x,
@@ -797,61 +782,9 @@ namespace DndProximityVoice.Map
                 canvasRect.height);
             GUI.enabled = previousEnabled;
             ClampMapScroll(canvasRect.size, viewportRect.size);
+            UpdateQuickMenuRect(viewportRect, canvasRect.size);
+            DrawQuickMenu();
             GUI.EndGroup();
-        }
-
-        private void DrawMapToolbar(Rect rect, PlayerData selectedPlayer)
-        {
-            GUI.Box(rect, GUIContent.none, AppUiTheme.CardSoft);
-            GUI.Label(
-                new Rect(rect.x + 14f, rect.y + 8f, 150f, 18f),
-                "MAPPA TATTICA",
-                AppUiTheme.EyebrowSmall);
-            var mapSize = tacticalMapManager?.MapSizeMeters ?? new Vector2(48f, 48f);
-            GUI.Label(
-                new Rect(rect.x + 14f, rect.y + 27f, 320f, 22f),
-                $"{mapSize.x:0} × {mapSize.y:0} m  ·  " +
-                $"{CountWalls(false)} muri  ·  {CountWalls(true)} porte  ·  " +
-                FormatRoomCount(tacticalMapManager?.Rooms.Count ?? 0),
-                AppUiTheme.Caption);
-            GUI.Label(
-                new Rect(rect.center.x - 118f, rect.y + 27f, 236f, 22f),
-                $"ZOOM {Mathf.RoundToInt(mapPixelsPerMeter / DefaultMapPixelsPerMeter * 100f)}%  ·  CTRL + ROTELLA",
-                AppUiTheme.CaptionCentered);
-
-            if (tacticalMapManager?.CanEdit != true)
-            {
-                var voiceMode = selectedPlayer?.VoiceMode ?? VoiceMode.Normal;
-                AppUiTheme.DrawLabel(
-                    new Rect(rect.xMax - 220f, rect.y + 19f, 204f, 24f),
-                    $"{VoiceModeProfile.GetDisplayName(voiceMode)}  ·  " +
-                    $"{VoiceModeProfile.GetMaximumDistance(voiceMode):0} m",
-                    AppUiTheme.CaptionRight,
-                    GetVoiceModeColor(voiceMode));
-                return;
-            }
-
-            var activeTool = wallBuildMode
-                ? "DISEGNO MURI"
-                : doorPlacementMode
-                    ? "INSERIMENTO PORTA"
-                    : wallEraseMode
-                        ? "GOMMA ATTIVA"
-                        : string.Empty;
-            if (!string.IsNullOrEmpty(activeTool))
-            {
-                AppUiTheme.DrawPill(
-                    new Rect(rect.xMax - 184f, rect.y + 13f, 170f, 30f),
-                    activeTool,
-                    wallEraseMode ? AppUiTheme.Danger : AppUiTheme.AccentBright);
-            }
-            else
-            {
-                GUI.Label(
-                    new Rect(rect.xMax - 230f, rect.y + 17f, 216f, 22f),
-                    "Strumenti di costruzione nel menu  ☰",
-                    AppUiTheme.CaptionRight);
-            }
         }
 
         private void DrawGrid(Rect rect, float pixelsPerMeter)
@@ -1107,7 +1040,7 @@ namespace DndProximityVoice.Map
         private void HandleMapWheel(Rect viewportRect, Vector2 mapSizeMeters, Event currentEvent)
         {
             // The map is drawn before the drawers, so it must not consume their wheel events.
-            if (burgerMenuOpen)
+            if (burgerMenuOpen || ConfirmationOpen || pointerOverQuickMenu)
             {
                 return;
             }
@@ -1120,37 +1053,8 @@ namespace DndProximityVoice.Map
 
             if (currentEvent.control || currentEvent.command)
             {
-                var oldPixelsPerMeter = mapPixelsPerMeter;
-                var zoomFactor = Mathf.Exp(-currentEvent.delta.y * MapZoomSensitivity);
-                var newPixelsPerMeter = Mathf.Clamp(
-                    oldPixelsPerMeter * zoomFactor,
-                    MinimumMapPixelsPerMeter,
-                    MaximumMapPixelsPerMeter);
-                if (!Mathf.Approximately(newPixelsPerMeter, oldPixelsPerMeter))
-                {
-                    var pointerInViewport = currentEvent.mousePosition - viewportRect.position;
-                    var oldCanvasRect = new Rect(
-                        0f,
-                        0f,
-                        mapSizeMeters.x * oldPixelsPerMeter,
-                        mapSizeMeters.y * oldPixelsPerMeter);
-                    var mapPositionUnderPointer = LocalToMap(
-                        mapScroll + pointerInViewport,
-                        oldCanvasRect,
-                        oldPixelsPerMeter);
-
-                    mapPixelsPerMeter = newPixelsPerMeter;
-                    var newCanvasSize = new Vector2(
-                        mapSizeMeters.x * mapPixelsPerMeter,
-                        mapSizeMeters.y * mapPixelsPerMeter);
-                    var newPointerPosition = MapToLocal(
-                        mapPositionUnderPointer,
-                        new Rect(0f, 0f, newCanvasSize.x, newCanvasSize.y),
-                        mapPixelsPerMeter);
-                    mapScroll = newPointerPosition - pointerInViewport;
-                    ClampMapScroll(newCanvasSize, viewportRect.size);
-                }
-
+                SetMapZoom(mapPixelsPerMeter * Mathf.Exp(-currentEvent.delta.y * MapZoomSensitivity),
+                    currentEvent.mousePosition - viewportRect.position, viewportRect.size);
                 currentEvent.Use();
                 return;
             }
@@ -1344,9 +1248,12 @@ namespace DndProximityVoice.Map
         private void DrawBurgerMenu(Rect root)
         {
             var burgerRect = new Rect(root.x + 14f, root.y + 13f, 48f, 46f);
-            if (GUI.Button(burgerRect, burgerMenuOpen ? "×" : "☰", AppUiTheme.IconButton))
+            if (AppUiControls.IconButton(burgerRect, burgerMenuOpen ? UiIcon.Close : UiIcon.Menu, "Gestione della stanza"))
             {
                 burgerMenuOpen = !burgerMenuOpen;
+                CloseContext();
+                wallBuildMode = doorPlacementMode = false;
+                ResetWallChain();
                 if (!burgerMenuOpen)
                 {
                     playersDrawerOpen = false;
@@ -1366,7 +1273,7 @@ namespace DndProximityVoice.Map
                 new Rect(menuRect.x + 22f, menuRect.y + 20f, menuRect.width - 144f, 28f),
                 "Menu del tavolo",
                 AppUiTheme.Title);
-            if (GUI.Button(
+            if (AppUiControls.Button(
                     new Rect(menuRect.xMax - 110f, menuRect.y + 18f, 88f, 28f),
                     "UTILITÀ",
                     utilitiesDrawerOpen ? AppUiTheme.PrimaryButton : AppUiTheme.SecondaryButton))
@@ -1387,7 +1294,7 @@ namespace DndProximityVoice.Map
             var y = menuRect.y + 100f;
             GUI.Label(
                 new Rect(menuRect.x + 22f, y, menuRect.width - 44f, 20f),
-                "AZIONI RAPIDE",
+                "GESTIONE SESSIONE",
                 AppUiTheme.Eyebrow);
             y += 30f;
 
@@ -1395,7 +1302,7 @@ namespace DndProximityVoice.Map
             var quickButtonWidth = canManageSavedMaps
                 ? (menuRect.width - 50f) * 0.5f
                 : menuRect.width - 44f;
-            if (GUI.Button(
+            if (AppUiControls.Button(
                     new Rect(menuRect.x + 22f, y, quickButtonWidth, 42f),
                     $"GIOCATORI · {playerManager.Players.Count} " +
                     (playersDrawerOpen ? "◂" : "▸"),
@@ -1406,7 +1313,7 @@ namespace DndProximityVoice.Map
                 utilitiesDrawerOpen = false;
             }
 
-            if (canManageSavedMaps && GUI.Button(
+            if (canManageSavedMaps && AppUiControls.Button(
                     new Rect(menuRect.x + 28f + quickButtonWidth, y, quickButtonWidth, 42f),
                     "MAPPE " + (savedMapsDrawerOpen ? "◂" : "▸"),
                     savedMapsDrawerOpen ? AppUiTheme.PrimaryButton : AppUiTheme.SecondaryButton))
@@ -1435,7 +1342,7 @@ namespace DndProximityVoice.Map
                     AppUiTheme.EyebrowSmall);
                 y += 24f;
                 var compactWidth = (menuRect.width - 50f) * 0.25f;
-                if (GUI.Button(
+                if (AppUiControls.Button(
                         new Rect(menuRect.x + 22f, y, compactWidth, 38f),
                         "L −",
                         AppUiTheme.SecondaryButton))
@@ -1444,7 +1351,7 @@ namespace DndProximityVoice.Map
                         mapSize + new Vector2(-TacticalMapManager.MapResizeStepMeters, 0f));
                 }
 
-                if (GUI.Button(
+                if (AppUiControls.Button(
                         new Rect(menuRect.x + 24f + compactWidth, y, compactWidth, 38f),
                         "L +",
                         AppUiTheme.SecondaryButton))
@@ -1453,7 +1360,7 @@ namespace DndProximityVoice.Map
                         mapSize + new Vector2(TacticalMapManager.MapResizeStepMeters, 0f));
                 }
 
-                if (GUI.Button(
+                if (AppUiControls.Button(
                         new Rect(menuRect.x + 26f + compactWidth * 2f, y, compactWidth, 38f),
                         "A −",
                         AppUiTheme.SecondaryButton))
@@ -1462,7 +1369,7 @@ namespace DndProximityVoice.Map
                         mapSize + new Vector2(0f, -TacticalMapManager.MapResizeStepMeters));
                 }
 
-                if (GUI.Button(
+                if (AppUiControls.Button(
                         new Rect(menuRect.x + 28f + compactWidth * 3f, y, compactWidth, 38f),
                         "A +",
                         AppUiTheme.SecondaryButton))
@@ -1473,107 +1380,23 @@ namespace DndProximityVoice.Map
 
                 y += 50f;
 
-                GUI.Label(
-                    new Rect(menuRect.x + 22f, y, menuRect.width - 44f, 18f),
-                    "COSTRUZIONE",
-                    AppUiTheme.EyebrowSmall);
-                y += 20f;
-                var toolWidth = (menuRect.width - 52f) / 3f;
-                if (GUI.Button(
-                        new Rect(menuRect.x + 22f, y, toolWidth, 32f),
-                        wallBuildMode ? "✓ MURI" : "MURI",
-                        wallBuildMode ? AppUiTheme.PrimaryButton : AppUiTheme.SecondaryButton))
-                {
-                    wallBuildMode = !wallBuildMode;
-                    doorPlacementMode = false;
-                    wallEraseMode = false;
-                    wallDragActive = false;
-                    if (!wallBuildMode)
-                    {
-                        ResetWallChain();
-                    }
-
-                    burgerMenuOpen = false;
-                    playersDrawerOpen = false;
-                    savedMapsDrawerOpen = false;
-                    utilitiesDrawerOpen = false;
-                }
-
-                if (GUI.Button(
-                        new Rect(menuRect.x + 26f + toolWidth, y, toolWidth, 32f),
-                        doorPlacementMode ? "✓ PORTA" : "PORTA",
-                        doorPlacementMode ? AppUiTheme.PrimaryButton : AppUiTheme.SecondaryButton))
-                {
-                    doorPlacementMode = !doorPlacementMode;
-                    wallBuildMode = false;
-                    wallEraseMode = false;
-                    wallDragActive = false;
-                    ResetWallChain();
-                    burgerMenuOpen = false;
-                    playersDrawerOpen = false;
-                    savedMapsDrawerOpen = false;
-                    utilitiesDrawerOpen = false;
-                }
-
-                if (GUI.Button(
-                        new Rect(menuRect.x + 30f + toolWidth * 2f, y, toolWidth, 32f),
-                        wallEraseMode ? "✓ GOMMA" : "GOMMA",
-                        wallEraseMode ? AppUiTheme.PrimaryButton : AppUiTheme.DangerButton))
-                {
-                    wallEraseMode = !wallEraseMode;
-                    wallBuildMode = false;
-                    doorPlacementMode = false;
-                    wallDragActive = false;
-                    ResetWallChain();
-                    burgerMenuOpen = false;
-                    playersDrawerOpen = false;
-                    savedMapsDrawerOpen = false;
-                    utilitiesDrawerOpen = false;
-                }
-
-                y += 40f;
-                GUI.Label(
-                    new Rect(menuRect.x + 22f, y, 142f, 18f),
-                    $"SPESSORE  ·  {wallThicknessMeters:0.0} m",
-                    AppUiTheme.EyebrowSmall);
-                wallThicknessMeters = GUI.HorizontalSlider(
-                    new Rect(menuRect.x + 166f, y + 2f, menuRect.width - 188f, 18f),
-                    wallThicknessMeters,
-                    TacticalMapManager.MinimumWallThicknessMeters,
-                    TacticalMapManager.MaximumWallThicknessMeters);
-                y += 24f;
-                GUI.enabled = wallChainActive && wallChainSegmentCount >= 2;
-                if (GUI.Button(
-                        new Rect(menuRect.x + 22f, y, menuRect.width - 44f, 30f),
-                        "CHIUDI STANZA",
-                        AppUiTheme.SecondaryButton))
-                {
-                    CloseWallChain();
-                    burgerMenuOpen = false;
-                    playersDrawerOpen = false;
-                    savedMapsDrawerOpen = false;
-                    utilitiesDrawerOpen = false;
-                }
-
-                GUI.enabled = true;
-                y += 38f;
             }
 
             if (voiceManager.State == DiscordVoiceState.Connected)
             {
-                if (GUI.Button(
+                if (AppUiControls.Button(
                         new Rect(menuRect.x + 22f, y, menuRect.width - 44f, 42f),
-                        voiceManager.IsSelfMuted ? "RIATTIVA MICROFONO" : "DISATTIVA MICROFONO",
+                        "DISATTIVA VOCE",
                         AppUiTheme.SecondaryButton))
                 {
-                    voiceManager.ToggleSelfMute();
+                    voiceManager.StopVoice();
                 }
 
                 y += 52f;
             }
             else if (voiceManager.State == DiscordVoiceState.Ready || voiceManager.State == DiscordVoiceState.Failed)
             {
-                if (GUI.Button(
+                if (AppUiControls.Button(
                         new Rect(menuRect.x + 22f, y, menuRect.width - 44f, 42f),
                         "ATTIVA VOCE",
                         AppUiTheme.PrimaryButton))
@@ -1584,23 +1407,16 @@ namespace DndProximityVoice.Map
                 y += 52f;
             }
 
-            if (GUI.Button(
+            if (AppUiControls.Button(
                     new Rect(menuRect.x + 22f, menuRect.yMax - 62f, menuRect.width - 44f, 42f),
-                    "ESCI DALLA SESSIONE",
+                    sessionManager.IsHost ? "CHIUDI STANZA" : "ESCI DALLA SESSIONE",
                     AppUiTheme.DangerButton))
             {
-                burgerMenuOpen = false;
-                playersDrawerOpen = false;
-                savedMapsDrawerOpen = false;
-                utilitiesDrawerOpen = false;
-                wallBuildMode = false;
-                doorPlacementMode = false;
-                wallEraseMode = false;
-                wallDragActive = false;
-                ResetWallChain();
-                voiceManager.StopVoice();
-                sessionManager.LeaveSession();
+                RequestLeave();
             }
+
+            if (!string.IsNullOrEmpty(sessionManager.AdministrationError))
+                GUI.Label(new Rect(menuRect.x + 22f, y, menuRect.width - 44f, 50f), sessionManager.AdministrationError, AppUiTheme.Caption);
 
             DrawPlayersDrawer(menuRect);
             DrawSavedMapsDrawer(menuRect);
@@ -1614,7 +1430,7 @@ namespace DndProximityVoice.Map
             var previousEnabled = GUI.enabled;
             GUI.enabled = previousEnabled && !string.IsNullOrEmpty(code) &&
                           code.Length == SessionCode.Length && SessionCode.IsValid(code);
-            if (GUI.Button(rect, copied ? "COPIATO" : "COPIA", AppUiTheme.SecondaryButton))
+            if (AppUiControls.Button(rect, copied ? "COPIATO" : "COPIA", AppUiTheme.SecondaryButton))
             {
                 try
                 {
@@ -1659,7 +1475,7 @@ namespace DndProximityVoice.Map
                 AppUiTheme.Caption);
 
             var y = rect.y + 108f;
-            if (GUI.Button(
+            if (AppUiControls.Button(
                     new Rect(rect.x + 20f, y, rect.width - 40f, 42f),
                     "APRI CARTELLA LOG",
                     AppUiTheme.SecondaryButton))
@@ -1688,7 +1504,7 @@ namespace DndProximityVoice.Map
 
             if (playerManager.CanMovePlayers)
             {
-                if (GUI.Button(
+                if (AppUiControls.Button(
                         new Rect(rect.x + 20f, y, rect.width - 40f, 42f),
                         "APRI CARTELLA MAPPE",
                         AppUiTheme.SecondaryButton))
@@ -1756,7 +1572,7 @@ namespace DndProximityVoice.Map
 
             var buttonWidth = (menuRect.width - 50f) * 0.25f;
             var previousEnabled = GUI.enabled;
-            GUI.enabled = selected != null;
+            GUI.enabled = previousEnabled && selected != null;
             DrawPrivateGroupButton(menuRect.x + 22f, y, buttonWidth, "NESSUNO", PrivateVoiceGroup.None, selected);
             DrawPrivateGroupButton(menuRect.x + 24f + buttonWidth, y, buttonWidth, "A", PrivateVoiceGroup.A, selected);
             DrawPrivateGroupButton(menuRect.x + 26f + buttonWidth * 2f, y, buttonWidth, "B", PrivateVoiceGroup.B, selected);
@@ -1765,7 +1581,7 @@ namespace DndProximityVoice.Map
             y += 38f;
 
             var isolationEnabled = playerManager.PrivateGroupsIsolated;
-            if (GUI.Button(
+            if (AppUiControls.Button(
                     new Rect(menuRect.x + 22f, y, menuRect.width - 44f, 32f),
                     isolationEnabled ? "✓ ISOLAMENTO GRUPPI ATTIVO" : "ISOLAMENTO GRUPPI DISATTIVO",
                     isolationEnabled ? AppUiTheme.PrimaryButton : AppUiTheme.SecondaryButton))
@@ -1785,7 +1601,7 @@ namespace DndProximityVoice.Map
             PlayerData selected)
         {
             var isSelected = selected != null && selected.PrivateGroup == group;
-            if (GUI.Button(
+            if (AppUiControls.Button(
                     new Rect(x, y, width, 30f),
                     isSelected ? $"✓ {label}" : label,
                     isSelected ? AppUiTheme.PrimaryButton : AppUiTheme.SecondaryButton))
@@ -1800,22 +1616,33 @@ namespace DndProximityVoice.Map
             bool pointerInsideViewport,
             Event currentEvent)
         {
-            if (burgerMenuOpen)
+            if (burgerMenuOpen || ConfirmationOpen)
             {
                 draggingPlayerId = 0;
                 wallDragActive = false;
                 return;
             }
 
+            if (pointerOverQuickMenu) return;
+
             var pointerInsideMap = pointerInsideViewport && mapRect.Contains(currentEvent.mousePosition);
-            if ((wallBuildMode || doorPlacementMode || wallEraseMode) &&
-                currentEvent.type == EventType.KeyDown &&
+            if (pointerInsideMap && currentEvent.type == EventType.Repaint && !wallBuildMode && !doorPlacementMode)
+            {
+                foreach (var player in playerManager.Players)
+                {
+                    var center = MapToLocal(player.Position, mapRect, pixelsPerMeter);
+                    AppUiControls.Hover(new Rect(center - Vector2.one * TokenSize * 0.5f, Vector2.one * TokenSize));
+                }
+                if (tacticalMapManager?.CanEdit == true && tacticalMapManager.GetWallAt(LocalToMap(currentEvent.mousePosition, mapRect, pixelsPerMeter)) != null)
+                    AppUiControls.Hover(mapRect);
+            }
+            if (currentEvent.type == EventType.KeyDown &&
                 currentEvent.keyCode == KeyCode.Escape)
             {
                 wallBuildMode = false;
                 doorPlacementMode = false;
-                wallEraseMode = false;
                 wallDragActive = false;
+                ClearSelection();
                 ResetWallChain();
                 currentEvent.Use();
                 return;
@@ -1823,33 +1650,25 @@ namespace DndProximityVoice.Map
 
             if (selectedWallId != 0 &&
                 tacticalMapManager?.CanEdit == true &&
+                GUIUtility.keyboardControl == 0 &&
                 currentEvent.type == EventType.KeyDown &&
                 (currentEvent.keyCode == KeyCode.Delete || currentEvent.keyCode == KeyCode.Backspace))
             {
-                tacticalMapManager.TryRemoveWall(selectedWallId);
-                selectedWallId = 0;
-                ResetWallChain();
+                RequestDeleteWall();
                 currentEvent.Use();
                 return;
             }
 
-            if (wallEraseMode && tacticalMapManager?.CanEdit == true)
+            if (wallMoveMode && tacticalMapManager?.CanEdit == true)
             {
-                if (currentEvent.type == EventType.MouseDown &&
-                    currentEvent.button == 0 &&
-                    pointerInsideMap)
+                if (currentEvent.type == EventType.MouseDown && currentEvent.button == 0 && pointerInsideMap)
                 {
-                    var mapPosition = LocalToMap(currentEvent.mousePosition, mapRect, pixelsPerMeter);
-                    var wall = tacticalMapManager.GetWallAt(mapPosition);
-                    if (wall != null)
-                    {
-                        tacticalMapManager.TryRemoveWall(wall.Id);
-                        selectedWallId = 0;
-                    }
-
+                    var wall = tacticalMapManager.GetWall(selectedWallId);
+                    var position = LocalToMap(currentEvent.mousePosition, mapRect, pixelsPerMeter);
+                    if (wall != null && tacticalMapManager.TryMoveWall(wall.Id, position - (wall.End - wall.Start) * 0.5f)) wallMoveMode = false;
+                    else actionMessage = tacticalMapManager.LastError;
                     currentEvent.Use();
                 }
-
                 return;
             }
 
@@ -1868,7 +1687,8 @@ namespace DndProximityVoice.Map
                     }
                     else if (tacticalMapManager.TryInsertDoor(mapPosition, out var createdDoor))
                     {
-                        selectedWallId = createdDoor.Id;
+                        SelectWall(createdDoor, mapPosition);
+                        doorPlacementMode = false;
                     }
 
                     currentEvent.Use();
@@ -1927,6 +1747,7 @@ namespace DndProximityVoice.Map
                 currentEvent.button == 0 &&
                 pointerInsideMap)
             {
+                GUIUtility.keyboardControl = 0;
                 var hitToken = false;
                 for (var index = playerManager.Players.Count - 1; index >= 0; index--)
                 {
@@ -1942,7 +1763,7 @@ namespace DndProximityVoice.Map
                         continue;
                     }
 
-                    selectedPlayerId = player.DiscordUserId;
+                    SelectPlayer(player.DiscordUserId);
                     if (playerManager.CanMovePlayers)
                     {
                         draggingPlayerId = player.DiscordUserId;
@@ -1953,15 +1774,11 @@ namespace DndProximityVoice.Map
                     break;
                 }
 
-                if (!hitToken && playerManager.CanMovePlayers)
+                if (!hitToken)
                 {
                     var mapPosition = LocalToMap(currentEvent.mousePosition, mapRect, pixelsPerMeter);
-                    var obstacle = tacticalMapManager?.GetWallAt(mapPosition);
-                    selectedWallId = obstacle?.Id ?? 0;
-                    if (obstacle?.IsDoor == true)
-                    {
-                        tacticalMapManager.TryCycleDoorState(obstacle.Id);
-                    }
+                    var obstacle = playerManager.CanMovePlayers ? tacticalMapManager?.GetWallAt(mapPosition) : null;
+                    SelectWall(obstacle, mapPosition);
 
                     currentEvent.Use();
                 }
@@ -1982,7 +1799,7 @@ namespace DndProximityVoice.Map
         private void HandleVoiceModeShortcuts()
         {
             var currentEvent = Event.current;
-            if (currentEvent.type != EventType.KeyDown)
+            if (currentEvent.type != EventType.KeyDown || burgerMenuOpen || ConfirmationOpen || GUIUtility.keyboardControl != 0)
             {
                 return;
             }
@@ -2039,29 +1856,6 @@ namespace DndProximityVoice.Map
             }
 
             return null;
-        }
-
-        private void EnsureSelection()
-        {
-            if (playerManager.GetPlayer(selectedPlayerId) != null)
-            {
-                return;
-            }
-
-            selectedPlayerId = 0;
-            foreach (var player in playerManager.Players)
-            {
-                if (player.IsLocal)
-                {
-                    selectedPlayerId = player.DiscordUserId;
-                    return;
-                }
-            }
-
-            if (playerManager.Players.Count > 0)
-            {
-                selectedPlayerId = playerManager.Players[0].DiscordUserId;
-            }
         }
 
         private static Color GetPrivateGroupColor(PrivateVoiceGroup group)
@@ -2314,6 +2108,10 @@ namespace DndProximityVoice.Map
 
         private void OnDestroy()
         {
+            if (sessionManager != null) sessionManager.StateChanged -= OnSessionChanged;
+            if (tacticalMapManager != null) tacticalMapManager.MapReplaced -= ClearSelection;
+            UnityEngine.SceneManagement.SceneManager.activeSceneChanged -= OnActiveSceneChanged;
+            ResetInteractions();
             DestroyTexture(mapTexture);
             DestroyTexture(mapGridTexture);
             DestroyTexture(circleTexture);

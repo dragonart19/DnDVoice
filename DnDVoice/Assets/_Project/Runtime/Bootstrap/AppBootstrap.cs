@@ -5,6 +5,7 @@ using DndProximityVoice.Players;
 using DndProximityVoice.Realtime;
 using DndProximityVoice.Session;
 using DndProximityVoice.Voice;
+using DndProximityVoice.UI;
 using UnityEngine;
 
 namespace DndProximityVoice.Bootstrap
@@ -50,6 +51,7 @@ namespace DndProximityVoice.Bootstrap
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = TargetFrameRate;
             ConfigureLowLatencyAudio();
+            gameObject.AddComponent<AppUiPointer>();
 
             if (!DiscordSdkAvailability.IsIntegrated)
             {

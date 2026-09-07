@@ -26,6 +26,7 @@ namespace DndProximityVoice.Discord
             }
 
             var previousMatrix = GUI.matrix;
+            AppUiControls.BeginSurface();
             AppUiTheme.BeginResponsive(ReferenceWidth, ReferenceHeight, out var viewport);
             AppUiTheme.DrawBackdrop(viewport);
             DrawBrand(viewport);
@@ -53,7 +54,7 @@ namespace DndProximityVoice.Discord
             var buttonText = authManager.State == DiscordAuthState.Failed
                 ? "RIPROVA CON DISCORD   →"
                 : "CONTINUA CON DISCORD   →";
-            if (GUI.Button(
+            if (AppUiControls.Button(
                     new Rect(panel.x + 56f, panel.y + 300f, panel.width - 112f, 56f),
                     buttonText,
                     AppUiTheme.PrimaryButton))
@@ -71,6 +72,7 @@ namespace DndProximityVoice.Discord
                 new Rect(viewport.x + 28f, viewport.yMax - 36f, 360f, 22f),
                 "D&D PROXIMITY VOICE  ·  BUILD 1.0  ·  DISCORD DIRECT",
                 AppUiTheme.Caption);
+            AppUiControls.EndSurface(viewport);
             GUI.matrix = previousMatrix;
         }
 

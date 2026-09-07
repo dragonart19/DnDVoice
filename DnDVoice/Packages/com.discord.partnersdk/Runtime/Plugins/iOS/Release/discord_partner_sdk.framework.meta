@@ -43,7 +43,7 @@ PluginImporter:
       settings:
         CPU: None
     iOS:
-      enabled: 0
+      enabled: 1
       settings:
         AddToEmbeddedBinaries: true
         CPU: AnyCPU

@@ -9,8 +9,9 @@ using UnityEngine;
 namespace Discord.Sdk.Editor {
 /// <summary>
 /// Selects the correct Discord native library (Debug or Release) before each build.
-/// Development builds use the Debug library; non-development (release) builds use Release.
-/// In the Editor, the Debug library is always active.
+/// Development builds prefer the Debug library; non-development builds use Release.
+/// If the optional Debug binaries are absent, the Editor and development builds fall back to
+/// Release so the managed bindings never start without a compatible native plugin.
 /// </summary>
 public class DiscordPluginSelector
   : IPreprocessBuildWithReport
@@ -95,11 +96,21 @@ public class DiscordPluginSelector
             .Where(p => IsDiscordNativePlugin(p.assetPath))
             .ToArray();
 
+        // Debug binaries are intentionally optional (and are excluded from this repository).
+        // The package used to disable every Release importer while looking for a Debug importer
+        // that did not exist, causing NativeMethods' first DllImport to throw at runtime.
+        bool debugPluginsAvailable = importers.Any(p =>
+          p.assetPath.Contains("/Debug/") &&
+          string.Equals(Path.GetFileName(p.assetPath), GetPrimaryLibraryName(),
+                        System.StringComparison.Ordinal));
+        bool effectiveUseDebug = useDebug && debugPluginsAvailable;
+
         // Disable first so we never have two same-named plugins enabled simultaneously.
         foreach (var importer in importers) {
             bool isDebugPlugin = importer.assetPath.Contains("/Debug/");
             bool isReleasePlugin = importer.assetPath.Contains("/Release/");
-            bool shouldEnable = (useDebug && isDebugPlugin) || (!useDebug && isReleasePlugin);
+            bool shouldEnable = (effectiveUseDebug && isDebugPlugin) ||
+              (!effectiveUseDebug && isReleasePlugin);
             if (!shouldEnable) {
                 SetPluginEnabled(importer, false);
             }
@@ -108,10 +119,24 @@ public class DiscordPluginSelector
         foreach (var importer in importers) {
             bool isDebugPlugin = importer.assetPath.Contains("/Debug/");
             bool isReleasePlugin = importer.assetPath.Contains("/Release/");
-            bool shouldEnable = (useDebug && isDebugPlugin) || (!useDebug && isReleasePlugin);
+            bool shouldEnable = (effectiveUseDebug && isDebugPlugin) ||
+              (!effectiveUseDebug && isReleasePlugin);
             if (shouldEnable) {
                 SetPluginEnabled(importer, true);
             }
+        }
+    }
+
+    private static string GetPrimaryLibraryName() {
+        switch (Application.platform) {
+        case RuntimePlatform.WindowsEditor:
+            return "discord_partner_sdk.dll";
+        case RuntimePlatform.LinuxEditor:
+            return "libdiscord_partner_sdk.so";
+        case RuntimePlatform.OSXEditor:
+            return "libdiscord_partner_sdk.dylib";
+        default:
+            return string.Empty;
         }
     }
 
@@ -218,6 +243,10 @@ public class DiscordPluginSelector
     private static string GetKrispModelSourcePath(BuildTarget buildTarget, bool useDebug) {
         string config = useDebug ? "Debug" : "Release";
         string archPath = Path.GetFullPath(Path.Combine(PluginsRoot, "x86_64", config));
+        if (!Directory.Exists(archPath) && useDebug) {
+            config = "Release";
+            archPath = Path.GetFullPath(Path.Combine(PluginsRoot, "x86_64", config));
+        }
         if ((buildTarget == BuildTarget.StandaloneWindows ||
              buildTarget == BuildTarget.StandaloneWindows64 ||
              buildTarget == BuildTarget.StandaloneLinux64) &&
