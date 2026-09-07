@@ -1,0 +1,23 @@
+## Esito della prova del 6 settembre
+
+Il progetto è stato usato con **7 partecipanti totali, DM compreso**, e il
+riscontro generale è stato molto positivo. Il candidato più recente non è
+stato però usato per la sessione completa: durante la verifica precedente sono
+emersi muri spessi ancora troppo udibili e una perdita di chiamata/sessione.
+La partita è proseguita con una build precedente conservata su GitHub.
+
+Il registro locale del candidato contiene `JoinTimeout`, disconnessione Relay e
+lobby Discord non più disponibile. La Build 1.0.1 rafforza l'occlusione,
+conserva la sessione durante le riconnessioni brevi del client Discord e tenta
+fino a tre ripristini automatici della voce. L'utente ha confermato il 7
+settembre il completamento della checklist A–D: confronto acustico a due client,
+recupero dopo interruzione breve e prova prolungata. La suite EditMode è stata
+poi rieseguita con Unity `6000.3.8f1` alle 13:16 UTC: **53/53 test superati**,
+zero falliti o saltati e nessun errore di compilazione. L'hash del nuovo
+pacchetto non è ancora registrato nella repository.
+
+[Piano e checklist in italiano](docs/PLAYTEST_2026_09_06_IT.md) ·
+[Playtest plan and checklist in English](docs/PLAYTEST_2026_09_06_EN.md).
+La roadmap V2 resta valida; le nuove funzioni 3D seguono questa verifica.
+Modifiche ed esiti vengono documentati nella repository; **commit e push
+rimangono a cura dell'utente**.
