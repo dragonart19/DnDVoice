@@ -24,7 +24,10 @@ namespace DndProximityVoice.Voice
         private const float VolumeReleasePerSecond = 8f;
         private const float ClearCutoffFrequency = 22000f;
         private const float HeavyWallCutoffFrequency = 900f;
-        private const float HeavyWallGain = 0.12f;
+        // A two-metre wall must be almost opaque during real play. Discord Direct
+        // cannot currently apply Unity's low-pass filter, so volume is the primary
+        // acoustic barrier on the production path.
+        private const float HeavyWallGain = 0.02f;
         private const float FilterSmoothingSpeed = 7f;
 
         private RemotePcmStream stream;

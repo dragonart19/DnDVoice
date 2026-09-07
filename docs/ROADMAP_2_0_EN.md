@@ -13,7 +13,7 @@ to deliver before Sunday. The user performs commits and pushes.
 
 ## Active development
 
-[Issue #3](https://github.com/dragonart19/DnDVoice/issues/3) separates Build 1.0,
+[Issue #3](https://github.com/dragonart19/DnDVoice/issues/3) separates Build 1.0.1,
 2D Tabletop, and 3D World Builder on `feature/3-mode-boundaries`. Its boundaries,
 acceptance criteria, and user-run tests are documented in
 [Mode architecture](ARCHITECTURE_MODES_EN.md).
@@ -27,7 +27,7 @@ that scene by choosing the character or location from which they speak.
 
 > **Product promise:** Build the scene. Become every voice.
 
-Build 1.0 remains the stable, playable foundation. New capabilities are built
+Build 1.0.1 remains the stable, playable foundation. New capabilities are built
 as separate modules and integrated only after tests with two or more clients.
 
 ## Decisions already made
@@ -161,7 +161,7 @@ platform does not move forward.
 
 | Phase | Outcome | Exit criterion |
 | --- | --- | --- |
-| Foundations | V2 boundaries, data, and pipeline | Build 1.0 remains stable and formats are documented |
+| Foundations | V2 boundaries, data, and pipeline | Build 1.0.1 remains stable and formats are documented |
 | 3D vertical slice | complete playable tavern | two-client session with no critical blocker |
 | Closed alpha | campaigns, import, and recovery | external testers finish a session without assistance |
 | Commercial MVP | DM Edition + Player Client | distributable build with verified licenses and privacy |
@@ -171,7 +171,7 @@ platform does not move forward.
 
 ### P0 — essential
 
-- define boundaries between Build 1.0, 2D mode, and 3D mode;
+- define boundaries between Build 1.0.1, 2D mode, and 3D mode;
 - design versioned campaign and 3D scene data;
 - implement 3D camera, selection, and transform tools;
 - build the modular 3D room editor;
@@ -231,7 +231,7 @@ platform does not move forward.
   `develop/v2`. Moving a card to `Done` does not replace closing its linked issue.
 - Networking and voice changes always require at least two real clients.
 - No asset enters the project without recorded origin and license.
-- New work must not break Build 1.0.
+- New work must not break Build 1.0.1.
 - Validate the DM experience before expanding the platform.
 
 ## Intentionally outside the MVP

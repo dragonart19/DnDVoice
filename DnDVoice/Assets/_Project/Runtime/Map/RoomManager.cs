@@ -407,6 +407,8 @@ namespace DndProximityVoice.Map
         private const float DoorLengthMeters = 2f;
         private const float MinimumDoorSideMeters = 0.5f;
         private const float ClosedDoorOcclusion = 0.58f;
+        private const float MinimumWallOcclusion = 0.35f;
+        private const float MaximumWallOcclusion = 1f;
         private const float ComparisonEpsilon = 0.001f;
 
         private readonly List<WallData> walls = new List<WallData>();
@@ -826,7 +828,10 @@ namespace DndProximityVoice.Map
                     MinimumWallThicknessMeters,
                     MaximumWallThicknessMeters,
                     wall.ThicknessMeters);
-                var obstacleStrength = Mathf.Lerp(0.2f, 0.86f, normalizedThickness);
+                var obstacleStrength = Mathf.Lerp(
+                    MinimumWallOcclusion,
+                    MaximumWallOcclusion,
+                    normalizedThickness);
                 if (wall.IsDoor)
                 {
                     obstacleStrength = Mathf.Max(obstacleStrength, ClosedDoorOcclusion);

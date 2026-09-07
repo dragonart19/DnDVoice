@@ -13,7 +13,7 @@ impegni da completare prima di domenica. L'utente esegue commit e push.
 
 ## Sviluppo attivo
 
-La [issue #3](https://github.com/dragonart19/DnDVoice/issues/3) separa Build 1.0,
+La [issue #3](https://github.com/dragonart19/DnDVoice/issues/3) separa Build 1.0.1,
 Tavolo 2D e World Builder 3D nel branch `feature/3-mode-boundaries`. I confini,
 i criteri di accettazione e i test affidati all'utente sono nel documento
 [Architettura delle modalità](ARCHITECTURE_MODES_IT.md).
@@ -27,7 +27,7 @@ della scena, scegliendo da quale personaggio o punto dello spazio parlare.
 
 > **Promessa di prodotto:** Costruisci la scena. Diventa ogni voce.
 
-La Build 1.0 rimane la base stabile e giocabile. Le nuove funzioni vengono
+La Build 1.0.1 rimane la base stabile e giocabile. Le nuove funzioni vengono
 sviluppate in moduli separati e integrate soltanto dopo test a due o più client.
 
 ## Decisioni già definite
@@ -172,7 +172,7 @@ alla piattaforma community.
 
 | Fase | Risultato | Criterio di uscita |
 | --- | --- | --- |
-| Fondamenta | confini V2, dati e pipeline definiti | Build 1.0 ancora stabile e formati documentati |
+| Fondamenta | confini V2, dati e pipeline definiti | Build 1.0.1 ancora stabile e formati documentati |
 | Vertical slice 3D | taverna completa giocabile | sessione a due client senza blocchi critici |
 | Alpha chiusa | campagne, import e recovery | tester esterni completano una sessione senza assistenza |
 | MVP commerciale | DM Edition + Player Client | build distribuibile, licenze e privacy verificate |
@@ -182,7 +182,7 @@ alla piattaforma community.
 
 ### P0 — indispensabile
 
-- definire confini tecnici tra Build 1.0, modalità 2D e modalità 3D;
+- definire confini tecnici tra Build 1.0.1, modalità 2D e modalità 3D;
 - progettare dati versionati per campagne e scene 3D;
 - realizzare camera, selezione e trasformazione oggetti 3D;
 - creare il builder modulare di stanze 3D;
@@ -242,7 +242,7 @@ alla piattaforma community.
   dell'issue collegata.
 - Le funzioni di rete o voce richiedono sempre un test con almeno due client.
 - Nessun asset entra nel progetto senza origine e licenza registrate.
-- Le nuove funzioni non devono rompere la Build 1.0.
+- Le nuove funzioni non devono rompere la Build 1.0.1.
 - Prima viene validata l'esperienza del DM, poi viene ampliata la piattaforma.
 
 ## Cose intenzionalmente escluse dall'MVP

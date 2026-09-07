@@ -12,7 +12,34 @@ Discord Direct foundation, with uninterrupted voice and a synchronized map.
 
 This plan was prepared on September 5. Automated checks do not certify call
 quality: a test with all seven real participants is required. The session's
-outcome has not yet been verified.
+outcome is recorded below.
+
+## Outcome recorded on September 7
+
+The group completed a seven-participant session and overall product feedback
+was very positive. The `rc1` candidate did not become the session build,
+however: two blocking problems appeared during the checks immediately before
+play, and the DM correctly switched to a previously available GitHub fallback.
+
+- a very thick wall still left speech too intelligible;
+- a disconnect occurred after an unrecorded interval and reportedly affected
+  the DM as well;
+- the candidate's local `Player.log` records, in the available order, a Discord
+  call `JoinTimeout`, a Relay map disconnect, and an unavailable Discord lobby;
+  the lines have no absolute timestamps, so this log alone cannot prove the
+  duration or a single common cause;
+- the fallback build allowed play to continue, but the exact distributed
+  package name, commit, and hash were not recorded and must not be inferred
+  after the fact.
+
+Follow-up work starts from `main` on
+`hotfix/1.0-playtest-audio-stability` as **Build 1.0.1 Hotfix**. It includes
+stronger thick-wall occlusion, preservation of the lobby and Relay during
+short Discord reconnections, three bounded automatic voice-call retries, and
+diagnostics with elapsed runtime. V2 remains isolated on `develop/v2`. On
+September 7, the user confirmed the hotfix A–D checklist; the merge into
+`main` was completed by `77a9bf4`, and the foundation was then realigned on
+`develop/v2`.
 
 ## Inspected baseline
 
@@ -168,15 +195,16 @@ local run Unity resolved that directory to
 `%USERPROFILE%/AppData/LocalLow/DnD Proximity Voice/D_D Proximity Voice`;
 `SavedMaps` is inside it.
 
-| Check | Result as of September 5 |
+| Check | Updated result as of September 7 |
 | --- | --- |
 | Repository and baseline sources located | Complete, baseline `e81c288` plus the candidate's local changes |
-| Actual capacity for the group of seven | Code inspected: maximum eight; real load test pending |
-| Candidate EditMode tests | **47/47 passed**, zero failed or skipped; September 5, 17:22 Europe/Rome |
+| Actual capacity for the group of seven | Seven people completed the session using the fallback build |
+| `rc1` candidate EditMode tests | **47/47 passed**, zero failed or skipped; September 5, 17:22 Europe/Rome |
 | New candidate Windows build | Built and launched locally; ZIP and SHA-256 recorded; second-PC check pending |
 | Code copy, utilities, and menu input blocking | Implemented; automated tests and local visual check complete |
-| Real seven-person test and voice continuity | Pending |
-| Commit and push of this preparation | Performed by the user; changes are still local |
+| Real seven-person test and voice continuity | Session completed with the fallback; `rc1` was rejected during preflight because of occlusion and disconnects |
+| Commit and push of the `rc1` preparation | Completed by the user on `main`, commit `6d2304a` |
+| Build 1.0.1 Hotfix | Commit `9ba9a1c` published on the hotfix branch; A–D checklist confirmed; **53/53 EditMode tests** on the hotfix; merge into `main` completed by `77a9bf4`; V2 integration verified with **57/57** |
 
 Verification ran in Unity `6000.3.8f1`, batch EditMode. Unity exited with code
 `0`, with no compilation errors. The local report is
@@ -194,6 +222,11 @@ Verification ran in Unity `6000.3.8f1`, batch EditMode. Unity exited with code
 | RemotePcmDiagnosticTests | 1 |
 | RemotePcmStreamTests | 1 |
 | MapMenuInputTests | 5 |
+
+Build 1.0.1 adds six `RecoveryPolicyTests`, increasing the total from 47 to 53.
+On September 7 at 13:16 UTC, the batch suite on Unity `6000.3.8f1` passed
+**53/53** tests, with zero failures and zero skipped tests. The local report is
+`DnDVoice/Logs/hotfix-1.0.1-editmode-results.xml` and is ignored by Git.
 
 The nine tests in the four PCM suites cover local components, including the
 previous experimental playback path. They do not measure Discord Direct call

@@ -31,28 +31,37 @@ Principi di progetto:
 - nessuna credenziale privata nel client o nella repository;
 - stabilità della voce prima della ricerca della latenza minima assoluta.
 
-## 2. Stato della Build 1.0
+## 2. Stato della Build 1.0.1 Hotfix
 
-La Build 1.0 è un prototipo giocabile per Windows. Il flusso completo esiste:
+[Checklist e dettagli dell'hotfix 1.0.1](HOTFIX_1_0_1_IT.md).
+
+La Build 1.0.1 è l'hotfix successivo alla prova reale del 6 settembre. Il flusso completo esiste:
 accesso Discord, sessione con codice, mappa condivisa, pedine, voce di
 prossimità, muri, porte, stanze, gruppi e salvataggi locali.
 
-Questa non è ancora una release finale. Ogni modifica al networking o al
-percorso audio deve essere verificata con almeno due PC e due account Discord.
+Il gruppo di sette persone ha valutato positivamente il prodotto, ma il
+candidato più recente ha mostrato occlusione insufficiente e disconnessioni
+prima della partita. Il 7 settembre l'utente ha confermato il completamento
+della checklist A–D dell'hotfix con due client, inclusi occlusione,
+riconnessione breve e durata. La suite EditMode è stata rieseguita il 7
+settembre alle 13:16 UTC con Unity `6000.3.8f1`: **53/53 superati**, zero
+falliti o saltati e nessun errore di compilazione. L'integrazione in `main` è
+stata completata nel commit `77a9bf4`; la registrazione del pacchetto
+distribuibile resta separata dalla validazione.
 
 | Area | Stato | Dettaglio |
 | --- | :---: | --- |
 | OAuth Discord | ✅ | PKCE, Public Client e redirect locale |
 | Sessioni | ✅ | Crea/entra con codice di 6 caratteri |
-| Voce Discord Direct | ✅ | Chiamata nativa senza coda audio Unity |
+| Voce Discord Direct | ✅ | Chiamata nativa e tre tentativi automatici di ripristino, validata nella checklist A–D |
 | Attenuazione per distanza | ✅ | Calcolo locale per ogni partecipante |
 | Direzione stereo | 🟡 | Disponibile solo quando il callback offre almeno due canali PCM |
 | Mappa e pedine | ✅ | Stato autorevole del DM e interpolazione lato client |
 | Muri, porte e stanze | ✅ | Disegno, snap, spessore, stati porta e rilevamento stanze |
-| Occlusione | 🟡 | Attenuazione del volume attiva; filtro passa-basso non attivo |
+| Occlusione | 🟡 | Muri spessi quasi opachi; filtro passa-basso non attivo |
 | Gruppi privati | ✅ | Gruppi A/B/C applicati come regola audio locale |
 | Mappe salvate | ✅ | Persistenza JSON locale al computer |
-| Riconnessione | 🟡 | Gestione errori di base; recupero completo ancora da irrobustire |
+| Riconnessione | 🟡 | Lobby/Relay conservati durante brevi transizioni Discord; niente migrazione host |
 | Funzioni immersive avanzate | ⬜ | Telepatia, ambienti sonori, riverbero e preset |
 
 Legenda: ✅ disponibile · 🟡 parziale o da validare · ⬜ pianificato.
@@ -242,6 +251,12 @@ Ogni segmento che interseca la linea tra oratore e ascoltatore riduce il volume.
 L'effetto dei muri cresce con lo spessore. Le porte aperte non ostacolano la
 voce; quelle chiuse o bloccate sì.
 
+Nella Build 1.0.1 un muro minimo da `0,2 m` lascia circa il `66%` del guadagno
+che avrebbe senza ostacoli, mentre un muro massimo da `2 m` lo porta a circa il
+`2%`. Distanza e modalità vocale continuano a moltiplicare questo valore. Più
+muri attraversati sommano l'occlusione fino al limite massimo. Sono valori di
+partenza ricavati dal playtest e devono essere valutati nuovamente in cuffia.
+
 Il progetto originale prevedeva anche un filtro passa-basso per rendere la voce
 ovattata. In modalità Discord Direct il volume è applicato direttamente al
 partecipante della chiamata, ma il filtro non è ancora inserito nel percorso
@@ -271,7 +286,7 @@ della portata, 55% al 40%, 30% al 60%, 10% all'80% e 0% al limite massimo.
 
 Una versione precedente copiava il PCM in una coda Unity per ottenere pieno
 controllo su pan e filtri. Riducendo troppo quella coda la voce iniziava a
-interrompersi per underflow. La Build 1.0 affida continuità e jitter buffer al
+interrompersi per underflow. La Build 1.0.1 affida continuità e jitter buffer al
 percorso nativo Discord e applica il volume per partecipante.
 
 Questo elimina la fragile coda personalizzata e privilegia la stabilità. Una
@@ -394,13 +409,13 @@ la coda di riproduzione principale della modalità Discord Direct.
 Il comando dipende dal branch. Su `main` usa:
 
 ```text
-D&D Proximity Voice > Build Windows 1.0
+D&D Proximity Voice > Build Windows 1.0.1 Hotfix
 ```
 
 che crea la build stabile in:
 
 ```text
-Builds/DnDProximityVoice-Windows-BUILD-1.0
+Builds/DnDProximityVoice-Windows-BUILD-1.0.1-HOTFIX
 ```
 
 Su `develop/v2` e sui branch `feature/*` usa invece:
@@ -433,6 +448,8 @@ esegui tutti i test. La suite copre le aree core, tra cui:
 - generazione e normalizzazione del codice sessione;
 - portate e curve delle modalità vocali;
 - intersezioni e attenuazione degli ostacoli;
+- conservazione della sessione durante una transizione Discord temporanea e
+  limite dei tentativi automatici della voce;
 - conversione PCM e comportamento bounded della vecchia coda audio;
 - logica dei dati mappa e stanze dove coperta dalla suite.
 - regressioni del menu: rotellina semplice, `Ctrl` e `Shift` non modificano
@@ -448,11 +465,13 @@ Checklist minima prima di condividere una nuova build:
 5. movimento pedine fluido e sincronizzato in entrambe le istanze;
 6. cambio `1/2/3` visibile e udibile;
 7. volume diverso dentro/fuori portata;
-8. muro spesso attenua più di uno sottile;
+8. un muro da `2 m` rende la voce quasi impercettibile e uno sottile resta distinguibile;
 9. porta aperta/chiusa cambia l'audio e si sincronizza;
 10. salvataggio, caricamento ed eliminazione mappa;
 11. uscita pulita e nuovo ingresso senza riavviare Discord;
-12. conversazione continua per almeno 10–15 minuti senza tagli ricorrenti.
+12. conversazione continua per almeno 30 minuti senza tagli ricorrenti;
+13. interrompi brevemente la rete di un guest: la voce prova a ripartire senza
+    far sparire subito la sessione; se cade il DM, annota separatamente l'esito.
 
 ## 17. Risoluzione dei problemi
 
@@ -484,7 +503,7 @@ progetto, poi riaprilo con la versione Unity corretta. Non eliminare `Assets`,
 
 ### La voce si interrompe
 
-- usa la Build 1.0 Discord Direct, non una build sperimentale con coda Unity;
+- usa la Build 1.0.1 Discord Direct, non una build sperimentale con coda Unity;
 - controlla stabilità della rete e carico CPU;
 - usa cuffie e chiudi eventuali doppi canali vocali;
 - conserva il log completo di entrambe le macchine con ora dell'interruzione.
@@ -500,7 +519,8 @@ un'area da validare e migliorare.
 - solo Windows è stato assunto come target della prima release;
 - massimo pratico corrente: 8 partecipanti totali;
 - niente migrazione host automatica;
-- niente recupero completo dopo cambio rete o dispositivo audio;
+- tre tentativi automatici della voce e conservazione della sessione durante
+  brevi riconnessioni Discord; recupero completo e cambio dispositivo restano incompleti;
 - pan stereo dipendente dal formato PCM disponibile;
 - nessun filtro passa-basso/reverb nel percorso Discord Direct;
 - nessuna selezione di microfono e uscita dentro l'app;
@@ -517,7 +537,7 @@ un'area da validare e migliorare.
 ### Priorità 1 — affidabilità
 
 - test automatico e manuale multi-client ripetibile;
-- riconnessione a lobby, Relay e chiamata dopo perdita rete;
+- completare riconnessione di lobby e Relay dopo una perdita di rete prolungata;
 - gestione della disconnessione del DM e possibile migrazione host;
 - telemetria locale sicura per dropout, jitter e stato SDK, senza token;
 - conferma del limite giocatori e prove di carico da 4 a 8 utenti;
