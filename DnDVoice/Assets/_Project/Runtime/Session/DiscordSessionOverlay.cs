@@ -67,6 +67,7 @@ namespace DndProximityVoice.Session
                     break;
             }
 
+            AppUiTheme.DrawTooltip(viewport);
             GUI.matrix = previousMatrix;
         }
 
@@ -171,6 +172,16 @@ namespace DndProximityVoice.Session
                     AppUiTheme.PrimaryButton))
             {
                 sessionManager.JoinSession(joinCode);
+            }
+
+            var currentEvent = Event.current;
+            if (SessionCode.IsValid(joinCode) &&
+                currentEvent.type == EventType.KeyDown &&
+                (currentEvent.keyCode == KeyCode.Return || currentEvent.keyCode == KeyCode.KeypadEnter) &&
+                GUI.GetNameOfFocusedControl() == "SessionCode")
+            {
+                sessionManager.JoinSession(joinCode);
+                currentEvent.Use();
             }
 
             GUI.enabled = true;

@@ -3,6 +3,7 @@
 [← Main README](../README.md) · [Documentazione italiana](README_IT.md) ·
 [Product Roadmap 2.0](ROADMAP_2_0_EN.md) ·
 [Mode architecture](ARCHITECTURE_MODES_EN.md) ·
+[UI design system](UI_DESIGN_SYSTEM_EN.md) ·
 [GitHub Kanban](https://github.com/users/dragonart19/projects/1/views/1)
 
 > Scheduled playtest: **September 6, 2026, 10:30 Europe/Rome, seven participants
@@ -162,6 +163,8 @@ implemented yet.
 | Whisper | `1` |
 | Normal voice | `2` |
 | Shout | `3` |
+| Push-to-talk | Hold `V` while enabled |
+| Confirm session code | `Enter` in the code field |
 | Map zoom | `Ctrl + mouse wheel` |
 | Vertical scroll | Mouse wheel |
 | Horizontal scroll | `Shift + mouse wheel` |
@@ -173,6 +176,13 @@ implemented yet.
 The top-left burger menu contains construction tools and a collapsible connected
 players list, keeping the map clear. UI panels consume pointer events so a menu
 click should not move a token or draw a wall underneath it.
+
+The **Audio settings** drawer selects input/output devices, adjusts volume,
+switches between automatic and manual voice sensitivity, deafens incoming
+audio, and enables push-to-talk. The player drawer prioritizes the local user,
+active speakers, and connected users; speaking and audibility use text,
+symbols, and segmented meters in addition to color. See the
+[UI design system](UI_DESIGN_SYSTEM_EN.md) for tokens, spacing, states, and QA.
 
 ### Copy the code and open local files
 
@@ -518,11 +528,10 @@ and improvement.
 - practical current maximum: eight total participants;
 - no automatic host migration;
 - three automatic voice attempts and session preservation during short Discord
-  reconnects; full recovery and device changes remain incomplete;
+  reconnects; recovery after extended outages remains incomplete;
 - stereo pan depends on the available PCM format;
 - no low-pass filter or reverb in Discord Direct mode;
-- no in-app input/output device picker;
-- no master or per-user volume UI;
+- no microphone level test or per-user volume control;
 - save files are local only;
 - no complete Discord avatars; tokens primarily use initials and colors;
 - interface copy is primarily Italian;
@@ -543,9 +552,8 @@ and improvement.
 
 ### Priority 2 — audio controls
 
-- microphone and output-device selection;
 - microphone test and level meter;
-- master volume, per-player volume, and manual mute;
+- per-player volume and DM mute for one participant;
 - configurable spatial-audio intensity;
 - low-pass filtering through walls and doors;
 - anti-echo profiles and duplicate-listening diagnostics;
@@ -557,7 +565,7 @@ and improvement.
 - teleport and token locking;
 - per-player mute/isolate controls;
 - richer door, room-name, and acoustic-property editors;
-- clear green/yellow/red “who hears whom” visualization;
+- global DM “who hears whom” overview;
 - undo/redo and edit history;
 - map import/export.
 
@@ -572,9 +580,9 @@ and improvement.
 
 ### Priority 5 — experience and publishing
 
-- Discord avatars, speaking animation, and UI transitions;
-- tooltips, onboarding, and remappable shortcuts;
-- UI scaling, contrast, color-blind modes, and keyboard navigation;
+- complete Discord avatars and screen transitions;
+- onboarding and remappable shortcuts;
+- dedicated color-blind mode and complete controller navigation;
 - complete Italian/English localization;
 - macOS/Linux builds after SDK support validation;
 - installer, code signing, updates, and automated GitHub releases;

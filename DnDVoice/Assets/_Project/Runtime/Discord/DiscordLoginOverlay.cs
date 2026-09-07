@@ -72,6 +72,7 @@ namespace DndProximityVoice.Discord
                 new Rect(viewport.x + 28f, viewport.yMax - 36f, 520f, 22f),
                 $"{BuildInfo.ProductName.ToUpperInvariant()}  ·  {BuildInfo.ReleaseLabel.ToUpperInvariant()}",
                 AppUiTheme.Caption);
+            AppUiTheme.DrawTooltip(viewport);
             GUI.matrix = previousMatrix;
         }
 

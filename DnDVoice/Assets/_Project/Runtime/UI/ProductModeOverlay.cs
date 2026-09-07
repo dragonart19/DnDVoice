@@ -71,6 +71,7 @@ namespace DndProximityVoice.UI
                 new Rect(panel.x + 48f, panel.yMax - 52f, panel.width - 96f, 24f),
                 "La Build 1.0 resta protetta su main. Questo branch prepara l'architettura della V2.",
                 AppUiTheme.CaptionCentered);
+            AppUiTheme.DrawTooltip(viewport);
             GUI.matrix = previousMatrix;
         }
 

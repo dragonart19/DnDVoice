@@ -20,9 +20,9 @@ namespace DndProximityVoice.Map
         private const float OuterMargin = 16f;
         private const float HeaderHeight = 72f;
         private const float FooterHeight = 30f;
-        private const float RightPanelWidth = 300f;
+        private const float RightPanelWidth = 318f;
         private const float PanelGap = 12f;
-        private const float TokenSize = 56f;
+        private const float TokenSize = 60f;
         private const float DefaultMapPixelsPerMeter = 28f;
         private const float MinimumMapPixelsPerMeter = 12f;
         private const float MaximumMapPixelsPerMeter = 84f;
@@ -44,6 +44,7 @@ namespace DndProximityVoice.Map
         private bool playersDrawerOpen;
         private bool savedMapsDrawerOpen;
         private bool utilitiesDrawerOpen;
+        private bool audioSettingsOpen;
         private string copiedSessionCode = string.Empty;
         private float copiedCodeUntil;
         private string utilityMessage = string.Empty;
@@ -67,6 +68,7 @@ namespace DndProximityVoice.Map
         private bool mapScrollInitialized;
         private float mapPixelsPerMeter = DefaultMapPixelsPerMeter;
         private readonly List<string> savedMapNames = new List<string>();
+        private readonly List<PlayerData> orderedPlayers = new List<PlayerData>();
         private string savedMapNameInput = "Nuova mappa";
         private string savedMapMessage = string.Empty;
         private bool savedMapMessageIsError;
@@ -80,6 +82,8 @@ namespace DndProximityVoice.Map
         private Texture2D rangeTexture;
         private Texture2D selectionTexture;
         private Texture2D wallTexture;
+
+        private bool IsModalDrawerOpen => burgerMenuOpen || audioSettingsOpen;
 
         private void Awake()
         {
@@ -104,6 +108,7 @@ namespace DndProximityVoice.Map
             EnsureTextures();
             EnsureSelection();
             HandleVoiceModeShortcuts();
+            HandlePushToTalkShortcut();
 
             var previousMatrix = GUI.matrix;
             AppUiTheme.BeginResponsive(ReferenceWidth, ReferenceHeight, out var viewport);
@@ -130,6 +135,8 @@ namespace DndProximityVoice.Map
             DrawHeader(headerRect);
             DrawFooter(footerRect);
             DrawBurgerMenu(root);
+            DrawAudioSettingsDrawer(root, rightRect);
+            AppUiTheme.DrawTooltip(viewport);
 
             GUI.matrix = previousMatrix;
         }
@@ -213,31 +220,32 @@ namespace DndProximityVoice.Map
                 return;
             }
 
-            var rect = new Rect(menuRect.xMax + 10f, menuRect.y, 320f, menuRect.height);
+            var rect = new Rect(menuRect.xMax + 10f, menuRect.y, 348f, menuRect.height);
             AppUiTheme.DrawCard(rect, false, false);
             GUI.Label(
                 new Rect(rect.x + 20f, rect.y + 18f, rect.width - 40f, 24f),
-                $"Giocatori connessi  ·  {playerManager.Players.Count}",
+                $"Compagnia  ·  {playerManager.Players.Count}",
                 AppUiTheme.Heading);
             GUI.Label(
                 new Rect(rect.x + 20f, rect.y + 42f, rect.width - 40f, 34f),
-                "Seleziona una pedina per mostrarla sulla mappa.",
+                "Chi parla sale in cima. Seleziona una pedina per ispezionarne voce e distanza.",
                 AppUiTheme.Caption);
             AppUiTheme.DrawDivider(new Rect(rect.x + 20f, rect.y + 82f, rect.width - 40f, 1f));
 
             const float bottomHeight = 18f;
             var scrollRect = new Rect(rect.x + 12f, rect.y + 94f, rect.width - 20f, rect.height - 94f - bottomHeight);
-            var contentHeight = Mathf.Max(scrollRect.height, playerManager.Players.Count * 72f + 4f);
+            BuildOrderedPlayers();
+            var contentHeight = Mathf.Max(scrollRect.height, orderedPlayers.Count * 84f + 4f);
             playersScroll = GUI.BeginScrollView(
                 scrollRect,
                 playersScroll,
                 new Rect(0f, 0f, scrollRect.width - 16f, contentHeight));
 
             var y = 2f;
-            foreach (var player in playerManager.Players)
+            foreach (var player in orderedPlayers)
             {
-                DrawPlayerListItem(player, new Rect(0f, y, scrollRect.width - 18f, 64f));
-                y += 72f;
+                DrawPlayerListItem(player, new Rect(0f, y, scrollRect.width - 18f, 76f));
+                y += 84f;
             }
 
             GUI.EndScrollView();
@@ -247,21 +255,44 @@ namespace DndProximityVoice.Map
         private void DrawPlayerListItem(PlayerData player, Rect rect)
         {
             GUI.Box(rect, GUIContent.none, AppUiTheme.CardSoft);
+            var isSpeaking = player.IsConnected && voiceManager != null &&
+                             voiceManager.IsUserSpeaking(player.DiscordUserId);
             if (selectedPlayerId == player.DiscordUserId)
             {
                 AppUiTheme.DrawAccentBar(new Rect(rect.x, rect.y + 10f, 3f, rect.height - 20f));
             }
 
-            DrawColoredCircle(new Rect(rect.x + 12f, rect.y + 13f, 38f, 38f), player.Color, GetInitials(player));
+            if (isSpeaking)
+            {
+                AppUiTheme.DrawDot(new Vector2(rect.x + 32f, rect.center.y), 54f, AppUiTheme.Success);
+            }
+
+            DrawColoredCircle(new Rect(rect.x + 12f, rect.y + 18f, 40f, 40f), player.Color, GetInitials(player));
             GUI.Label(
-                new Rect(rect.x + 60f, rect.y + 10f, rect.width - 132f, 23f),
+                new Rect(rect.x + 62f, rect.y + 9f, rect.width - 148f, 23f),
                 player.DisplayName,
                 AppUiTheme.BodyBoldClip);
             AppUiTheme.DrawLabel(
-                new Rect(rect.x + 60f, rect.y + 33f, rect.width - 132f, 18f),
-                player.IsLocal ? "Questo sei tu" : player.IsConnected ? "Online" : "Non connesso",
+                new Rect(rect.x + 62f, rect.y + 31f, rect.width - 148f, 18f),
+                player.IsLocal
+                    ? "Questo sei tu"
+                    : isSpeaking
+                        ? "Sta parlando"
+                        : player.IsConnected ? "Online · in ascolto" : "Non connesso",
                 AppUiTheme.Caption,
-                player.IsConnected ? AppUiTheme.Success : AppUiTheme.Muted);
+                isSpeaking ? AppUiTheme.Success : player.IsConnected ? AppUiTheme.Muted : AppUiTheme.Danger);
+
+            if (isSpeaking)
+            {
+                DrawSpeakingBars(new Rect(rect.x + 62f, rect.y + 54f, 54f, 12f), AppUiTheme.Success);
+            }
+            else
+            {
+                GUI.Label(
+                    new Rect(rect.x + 62f, rect.y + 51f, rect.width - 148f, 17f),
+                    GetPlayerAudibilitySummary(player),
+                    AppUiTheme.CaptionSmall);
+            }
 
             var role = player.IsDM ? "DM" : "GIOCATORE";
             if (player.PrivateGroup != PrivateVoiceGroup.None)
@@ -275,7 +306,7 @@ namespace DndProximityVoice.Map
                 roleWidth += 42f;
             }
             AppUiTheme.DrawPill(
-                new Rect(rect.xMax - 12f - roleWidth, rect.y + 20f, roleWidth, 24f),
+                new Rect(rect.xMax - 12f - roleWidth, rect.y + 25f, roleWidth, 26f),
                 role,
                 roleColor,
                 AppUiTheme.EyebrowSmallCentered);
@@ -288,6 +319,83 @@ namespace DndProximityVoice.Map
                 utilitiesDrawerOpen = false;
                 burgerMenuOpen = false;
             }
+        }
+
+        private void BuildOrderedPlayers()
+        {
+            orderedPlayers.Clear();
+            foreach (var player in playerManager.Players)
+            {
+                var insertionIndex = orderedPlayers.Count;
+                while (insertionIndex > 0 && ComparePlayerRows(player, orderedPlayers[insertionIndex - 1]) < 0)
+                {
+                    insertionIndex--;
+                }
+
+                orderedPlayers.Insert(insertionIndex, player);
+            }
+        }
+
+        private int ComparePlayerRows(PlayerData left, PlayerData right)
+        {
+            return VoiceUiPresentation.ComparePlayers(
+                left.IsLocal,
+                voiceManager != null && voiceManager.IsUserSpeaking(left.DiscordUserId),
+                left.IsConnected,
+                left.IsDM,
+                left.DisplayName,
+                right.IsLocal,
+                voiceManager != null && voiceManager.IsUserSpeaking(right.DiscordUserId),
+                right.IsConnected,
+                right.IsDM,
+                right.DisplayName);
+        }
+
+        private string GetPlayerAudibilitySummary(PlayerData player)
+        {
+            if (player.IsLocal)
+            {
+                return voiceManager != null && voiceManager.IsSelfMuted ? "Microfono disattivato" : "Punto d'ascolto";
+            }
+
+            if (!player.IsConnected)
+            {
+                return "Non disponibile";
+            }
+
+            var localPlayer = GetLocalPlayer();
+            if (localPlayer == null)
+            {
+                return "Distanza non disponibile";
+            }
+
+            var distance = Vector2.Distance(localPlayer.Position, player.Position);
+            var wallOcclusion = tacticalMapManager?.CalculateOcclusion(localPlayer.Position, player.Position) ?? 0f;
+            var privateBlocked = !PrivateVoiceGroupRules.CanHear(
+                playerManager.PrivateGroupsIsolated,
+                localPlayer.PrivateGroup,
+                player.PrivateGroup);
+            var presentation = VoiceUiPresentation.Calculate(
+                distance,
+                player.VoiceMode,
+                wallOcclusion,
+                privateBlocked);
+            return $"{distance:0.0} m · {presentation.Label}";
+        }
+
+        private static void DrawSpeakingBars(Rect rect, Color color)
+        {
+            var pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 8f);
+            const float barWidth = 5f;
+            const float gap = 4f;
+            var firstHeight = rect.height * 0.42f;
+            var secondHeight = rect.height * (0.72f + pulse * 0.28f);
+            var thirdHeight = rect.height * (0.58f + pulse * 0.18f);
+            AppUiTheme.DrawRect(new Rect(rect.x, rect.yMax - firstHeight, barWidth, firstHeight), color);
+            AppUiTheme.DrawRect(new Rect(rect.x + barWidth + gap, rect.yMax - secondHeight, barWidth, secondHeight), color);
+            AppUiTheme.DrawRect(new Rect(rect.x + (barWidth + gap) * 2f, rect.yMax - thirdHeight, barWidth, thirdHeight), color);
+
+            GUI.Label(new Rect(rect.x + 34f, rect.y - 3f, rect.width - 34f, rect.height + 6f), "IN PAROLA", AppUiTheme.EyebrowSmall);
         }
 
         private void DrawSavedMapsDrawer(Rect menuRect)
@@ -312,6 +420,7 @@ namespace DndProximityVoice.Map
                 new Rect(rect.x + 20f, rect.y + 78f, rect.width - 40f, 18f),
                 "NOME MAPPA",
                 AppUiTheme.EyebrowSmall);
+            GUI.SetNextControlName("SavedMapName");
             var nextName = GUI.TextField(
                 new Rect(rect.x + 20f, rect.y + 100f, rect.width - 40f, 40f),
                 savedMapNameInput,
@@ -532,27 +641,65 @@ namespace DndProximityVoice.Map
                 "Audio separato e posizionale per ogni giocatore.",
                 AppUiTheme.Caption);
 
-            DrawVoiceStatus(new Rect(rect.x + 18f, rect.y + 76f, rect.width - 36f, 58f));
+            DrawVoiceStatus(new Rect(rect.x + 18f, rect.y + 76f, rect.width - 36f, 62f));
             var selected = playerManager.GetPlayer(selectedPlayerId);
-            DrawVoiceModeSelector(new Rect(rect.x + 18f, rect.y + 146f, rect.width - 36f, 84f));
-            DrawSelectedPlayerCard(new Rect(rect.x + 18f, rect.y + 240f, rect.width - 36f, 98f), selected);
+            DrawVoiceModeSelector(new Rect(rect.x + 18f, rect.y + 148f, rect.width - 36f, 82f));
+            DrawSelectedPlayerCard(new Rect(rect.x + 18f, rect.y + 240f, rect.width - 36f, 118f), selected);
 
-            var y = rect.y + 350f;
+            var y = rect.y + 370f;
             if (voiceManager.State == DiscordVoiceState.Connected)
             {
+                var controlWidth = (rect.width - 44f) * 0.5f;
                 if (GUI.Button(
-                        new Rect(rect.x + 18f, y, rect.width - 36f, 44f),
-                        voiceManager.IsSelfMuted ? "RIATTIVA MICROFONO" : "DISATTIVA MICROFONO",
+                        new Rect(rect.x + 18f, y, controlWidth, 42f),
+                        new GUIContent(
+                            voiceManager.IsSelfMuted ? "RIATTIVA MIC" : "DISATTIVA MIC",
+                            "Attiva o disattiva il tuo microfono per tutti i partecipanti."),
                         voiceManager.IsSelfMuted ? AppUiTheme.PrimaryButton : AppUiTheme.SecondaryButton))
                 {
                     voiceManager.ToggleSelfMute();
                 }
 
                 if (GUI.Button(
-                        new Rect(rect.x + 18f, rect.yMax - 112f, rect.width - 36f, 40f),
-                        "DISCONNETTI VOCE",
+                        new Rect(rect.x + 26f + controlWidth, y, controlWidth, 42f),
+                        new GUIContent(
+                            voiceManager.IsSelfDeafened ? "RIATTIVA CUFFIE" : "DISATTIVA CUFFIE",
+                            "Disattiva o riattiva tutto l'audio ricevuto."),
+                        voiceManager.IsSelfDeafened ? AppUiTheme.PrimaryButton : AppUiTheme.SecondaryButton))
+                {
+                    voiceManager.ToggleSelfDeafen();
+                }
+
+                if (GUI.Button(
+                        new Rect(rect.x + 18f, y + 52f, rect.width - 36f, 40f),
+                        new GUIContent("IMPOSTAZIONI AUDIO  ›", "Scegli dispositivi, volume, sensibilità e push-to-talk."),
+                        audioSettingsOpen ? AppUiTheme.PrimaryButton : AppUiTheme.SecondaryButton))
+                {
+                    audioSettingsOpen = !audioSettingsOpen;
+                    burgerMenuOpen = false;
+                    playersDrawerOpen = false;
+                    savedMapsDrawerOpen = false;
+                    utilitiesDrawerOpen = false;
+                    if (audioSettingsOpen)
+                    {
+                        voiceManager.RefreshAudioSettings();
+                    }
+                }
+
+                if (voiceManager.PushToTalkEnabled)
+                {
+                    AppUiTheme.DrawKeyHint(
+                        new Rect(rect.x + 20f, y + 102f, rect.width - 40f, 28f),
+                        "V",
+                        voiceManager.IsPushToTalkPressed ? "Stai trasmettendo" : "Tieni premuto per parlare");
+                }
+
+                if (GUI.Button(
+                        new Rect(rect.x + 18f, rect.yMax - 104f, rect.width - 36f, 34f),
+                        new GUIContent("DISCONNETTI VOCE", "Lascia la chiamata vocale senza uscire dalla sessione."),
                         AppUiTheme.SecondaryButton))
                 {
+                    audioSettingsOpen = false;
                     voiceManager.StopVoice();
                 }
             }
@@ -586,9 +733,10 @@ namespace DndProximityVoice.Map
 
             if (GUI.Button(
                     new Rect(rect.x + 18f, rect.yMax - 60f, rect.width - 36f, 42f),
-                    "ESCI DALLA SESSIONE",
+                    new GUIContent("ESCI DALLA SESSIONE", "Lascia il tavolo e la chiamata vocale."),
                     AppUiTheme.DangerButton))
             {
+                audioSettingsOpen = false;
                 voiceManager.StopVoice();
                 sessionManager.LeaveSession();
             }
@@ -649,26 +797,26 @@ namespace DndProximityVoice.Map
 
         private void DrawVoiceStatus(Rect rect)
         {
-            GUI.Box(rect, GUIContent.none, AppUiTheme.CardSoft);
             var connected = voiceManager.State == DiscordVoiceState.Connected;
             var color = connected
                 ? AppUiTheme.Success
                 : voiceManager.State == DiscordVoiceState.Failed
                     ? AppUiTheme.Danger
                     : AppUiTheme.Warning;
-            AppUiTheme.DrawDot(new Vector2(rect.x + 27f, rect.center.y), 15f, color);
-            AppUiTheme.DrawLabel(
-                new Rect(rect.x + 50f, rect.y + 9f, rect.width - 62f, 20f),
-                connected ? "Voce connessa" : voiceManager.State == DiscordVoiceState.Failed ? "Voce non disponibile" : "Voce disconnessa",
-                AppUiTheme.Heading,
-                color);
-            GUI.Label(
-                new Rect(rect.x + 50f, rect.y + 31f, rect.width - 62f, 20f),
-                connected
-                    ? $"{voiceManager.ParticipantCount} partecipanti  ·  " +
-                      "audio Discord diretto  ·  nessuna coda Unity"
-                    : "Attivala per parlare con il party.",
-                AppUiTheme.Caption);
+            var heading = connected
+                ? voiceManager.IsSelfMuted ? "Microfono disattivato" : "Voce connessa"
+                : voiceManager.State == DiscordVoiceState.Failed
+                    ? "Voce non disponibile"
+                    : voiceManager.State == DiscordVoiceState.Reconnecting
+                        ? "Riconnessione voce"
+                        : "Voce disconnessa";
+            var detail = connected
+                ? $"{voiceManager.ParticipantCount} partecipanti · audio Discord diretto"
+                : voiceManager.State == DiscordVoiceState.Reconnecting
+                    ? voiceManager.ErrorMessage
+                    : "Attivala per parlare con il party.";
+            var symbol = connected ? voiceManager.IsSelfMuted ? "M" : "✓" : voiceManager.State == DiscordVoiceState.Failed ? "!" : "↻";
+            AppUiTheme.DrawStatusBadge(rect, symbol, heading, detail, color);
         }
 
         private void DrawSelectedPlayerCard(Rect rect, PlayerData selected)
@@ -687,7 +835,7 @@ namespace DndProximityVoice.Map
                 return;
             }
 
-            DrawColoredCircle(new Rect(rect.x + 14f, rect.y + 36f, 46f, 46f), selected.Color, GetInitials(selected));
+            DrawColoredCircle(new Rect(rect.x + 14f, rect.y + 38f, 46f, 46f), selected.Color, GetInitials(selected));
             GUI.Label(
                 new Rect(rect.x + 72f, rect.y + 32f, rect.width - 88f, 24f),
                 selected.DisplayName,
@@ -708,12 +856,223 @@ namespace DndProximityVoice.Map
                 new Rect(rect.x + 72f, rect.y + 57f, rect.width - 88f, 20f),
                 detail,
                 AppUiTheme.Caption);
-            AppUiTheme.DrawLabel(
-                new Rect(rect.x + 72f, rect.y + 78f, rect.width - 88f, 18f),
-                $"{VoiceModeProfile.GetDisplayName(selected.VoiceMode)}  ·  " +
-                $"raggio {VoiceModeProfile.GetMaximumDistance(selected.VoiceMode):0} m",
-                AppUiTheme.Caption,
-                GetVoiceModeColor(selected.VoiceMode));
+            var privateBlocked = localPlayer != null && !selected.IsLocal &&
+                                 !PrivateVoiceGroupRules.CanHear(
+                                     playerManager.PrivateGroupsIsolated,
+                                     localPlayer.PrivateGroup,
+                                     selected.PrivateGroup);
+            var audibility = selected.IsLocal
+                ? new VoiceAudibilityPresentation(VoiceAudibilityLevel.Clear, 1f, "ASCOLTO", "Punto d'ascolto")
+                : VoiceUiPresentation.Calculate(distance, selected.VoiceMode, wallOcclusion, privateBlocked);
+            AppUiTheme.DrawSegmentedMeter(
+                new Rect(rect.x + 72f, rect.y + 83f, rect.width - 88f, 23f),
+                audibility.NormalizedStrength,
+                audibility.Label,
+                GetAudibilityColor(audibility.Level));
+        }
+
+        private void DrawAudioSettingsDrawer(Rect root, Rect voicePanelRect)
+        {
+            if (!audioSettingsOpen)
+            {
+                return;
+            }
+
+            var width = 430f;
+            var rect = new Rect(
+                Mathf.Max(root.x + 10f, voicePanelRect.x - width - PanelGap),
+                voicePanelRect.y,
+                width,
+                voicePanelRect.height);
+            AppUiTheme.DrawCard(rect, true);
+            GUI.Label(new Rect(rect.x + 22f, rect.y + 18f, rect.width - 86f, 28f), "Audio del tavolo", AppUiTheme.Title);
+            GUI.Label(
+                new Rect(rect.x + 22f, rect.y + 48f, rect.width - 86f, 22f),
+                "Dispositivi e ascolto. Le modifiche vengono applicate subito.",
+                AppUiTheme.Caption);
+            if (GUI.Button(
+                    new Rect(rect.xMax - 56f, rect.y + 16f, 36f, 36f),
+                    new GUIContent("×", "Chiudi le impostazioni audio."),
+                    AppUiTheme.IconButton))
+            {
+                audioSettingsOpen = false;
+                return;
+            }
+
+            var controlsEnabled = voiceManager.State == DiscordVoiceState.Connected;
+            var previousEnabled = GUI.enabled;
+            GUI.enabled = previousEnabled && controlsEnabled;
+            DrawAudioDeviceSelector(
+                new Rect(rect.x + 20f, rect.y + 82f, rect.width - 40f, 68f),
+                "MICROFONO",
+                voiceManager.CurrentInputDeviceName,
+                voiceManager.InputDevices.Count,
+                true);
+            DrawAudioDeviceSelector(
+                new Rect(rect.x + 20f, rect.y + 158f, rect.width - 40f, 68f),
+                "CUFFIE / ALTOPARLANTI",
+                voiceManager.CurrentOutputDeviceName,
+                voiceManager.OutputDevices.Count,
+                false);
+
+            GUI.Box(new Rect(rect.x + 20f, rect.y + 234f, rect.width - 40f, 102f), GUIContent.none, AppUiTheme.CardSoft);
+            DrawAudioSlider(
+                new Rect(rect.x + 34f, rect.y + 245f, rect.width - 68f, 36f),
+                "VOLUME MICROFONO",
+                voiceManager.InputVolume,
+                100f,
+                true);
+            DrawAudioSlider(
+                new Rect(rect.x + 34f, rect.y + 289f, rect.width - 68f, 36f),
+                "VOLUME ASCOLTO",
+                voiceManager.OutputVolume,
+                200f,
+                false);
+
+            GUI.Box(new Rect(rect.x + 20f, rect.y + 344f, rect.width - 40f, 100f), GUIContent.none, AppUiTheme.CardSoft);
+            GUI.Label(new Rect(rect.x + 34f, rect.y + 353f, 190f, 18f), "RILEVAMENTO VOCE", AppUiTheme.EyebrowSmall);
+            var automaticLabel = voiceManager.AutomaticVoiceSensitivity ? "✓ AUTOMATICA" : "MANUALE";
+            if (GUI.Button(
+                    new Rect(rect.xMax - 156f, rect.y + 350f, 122f, 28f),
+                    new GUIContent(automaticLabel, "La sensibilità automatica è consigliata per evitare tagli nella voce."),
+                    voiceManager.AutomaticVoiceSensitivity ? AppUiTheme.PrimaryButton : AppUiTheme.SecondaryButton))
+            {
+                voiceManager.SetAutomaticVoiceSensitivity(!voiceManager.AutomaticVoiceSensitivity);
+            }
+
+            var sensitivityEnabled = GUI.enabled;
+            GUI.enabled = sensitivityEnabled && !voiceManager.AutomaticVoiceSensitivity;
+            var nextThreshold = GUI.HorizontalSlider(
+                new Rect(rect.x + 34f, rect.y + 391f, rect.width - 132f, 18f),
+                voiceManager.VoiceSensitivityDb,
+                -100f,
+                0f);
+            if (Mathf.Abs(nextThreshold - voiceManager.VoiceSensitivityDb) >= 1f)
+            {
+                voiceManager.SetVoiceSensitivity(Mathf.Round(nextThreshold));
+            }
+
+            GUI.Label(
+                new Rect(rect.xMax - 90f, rect.y + 385f, 56f, 28f),
+                $"{voiceManager.VoiceSensitivityDb:0} dB",
+                AppUiTheme.CaptionRight);
+            GUI.enabled = sensitivityEnabled;
+            GUI.Label(
+                new Rect(rect.x + 34f, rect.y + 414f, rect.width - 68f, 19f),
+                voiceManager.AutomaticVoiceSensitivity
+                    ? "Discord regola la soglia in base all'ambiente."
+                    : "Verso 0 dB: serve una voce più forte per attivare il microfono.",
+                AppUiTheme.CaptionSmall);
+
+            var halfWidth = (rect.width - 48f) * 0.5f;
+            if (GUI.Button(
+                    new Rect(rect.x + 20f, rect.y + 454f, halfWidth, 42f),
+                    new GUIContent(
+                        voiceManager.PushToTalkEnabled ? "✓ PUSH-TO-TALK" : "PUSH-TO-TALK",
+                        "Se attivo, tieni premuto V per parlare."),
+                    voiceManager.PushToTalkEnabled ? AppUiTheme.PrimaryButton : AppUiTheme.SecondaryButton))
+            {
+                voiceManager.SetPushToTalkEnabled(!voiceManager.PushToTalkEnabled);
+            }
+
+            if (GUI.Button(
+                    new Rect(rect.x + 28f + halfWidth, rect.y + 454f, halfWidth, 42f),
+                    new GUIContent(
+                        voiceManager.IsSelfDeafened ? "✓ AUDIO OFF" : "DISATTIVA CUFFIE",
+                        "Disattiva tutto l'audio ricevuto dalla chiamata."),
+                    voiceManager.IsSelfDeafened ? AppUiTheme.PrimaryButton : AppUiTheme.SecondaryButton))
+            {
+                voiceManager.ToggleSelfDeafen();
+            }
+
+            GUI.enabled = previousEnabled;
+            var message = controlsEnabled
+                ? voiceManager.AudioSettingsMessage
+                : "Connetti prima la voce per modificare i dispositivi.";
+            if (!string.IsNullOrEmpty(message))
+            {
+                AppUiTheme.DrawLabel(
+                    new Rect(rect.x + 24f, rect.y + 506f, rect.width - 48f, 32f),
+                    message,
+                    AppUiTheme.CaptionCentered,
+                    controlsEnabled ? AppUiTheme.Muted : AppUiTheme.Warning);
+            }
+        }
+
+        private void DrawAudioDeviceSelector(
+            Rect rect,
+            string label,
+            string deviceName,
+            int deviceCount,
+            bool input)
+        {
+            GUI.Box(rect, GUIContent.none, AppUiTheme.CardSoft);
+            GUI.Label(new Rect(rect.x + 14f, rect.y + 7f, rect.width - 28f, 17f), label, AppUiTheme.EyebrowSmall);
+            var canCycle = deviceCount > 1;
+            var previousEnabled = GUI.enabled;
+            GUI.enabled = previousEnabled && canCycle;
+            if (GUI.Button(
+                    new Rect(rect.x + 12f, rect.y + 28f, 38f, 30f),
+                    new GUIContent("‹", $"Dispositivo precedente. {deviceCount} disponibili."),
+                    AppUiTheme.IconButton))
+            {
+                if (input)
+                {
+                    voiceManager.CycleInputDevice(-1);
+                }
+                else
+                {
+                    voiceManager.CycleOutputDevice(-1);
+                }
+            }
+
+            if (GUI.Button(
+                    new Rect(rect.xMax - 50f, rect.y + 28f, 38f, 30f),
+                    new GUIContent("›", $"Dispositivo successivo. {deviceCount} disponibili."),
+                    AppUiTheme.IconButton))
+            {
+                if (input)
+                {
+                    voiceManager.CycleInputDevice(1);
+                }
+                else
+                {
+                    voiceManager.CycleOutputDevice(1);
+                }
+            }
+
+            GUI.enabled = previousEnabled;
+            GUI.Label(
+                new Rect(rect.x + 58f, rect.y + 28f, rect.width - 116f, 30f),
+                string.IsNullOrWhiteSpace(deviceName) ? "Predefinito di sistema" : deviceName,
+                AppUiTheme.MonoCaption);
+        }
+
+        private void DrawAudioSlider(
+            Rect rect,
+            string label,
+            float value,
+            float maximum,
+            bool input)
+        {
+            GUI.Label(new Rect(rect.x, rect.y, 170f, 18f), label, AppUiTheme.EyebrowSmall);
+            GUI.Label(new Rect(rect.xMax - 58f, rect.y, 58f, 18f), $"{value:0}%", AppUiTheme.CaptionRight);
+            var nextValue = GUI.HorizontalSlider(
+                new Rect(rect.x + 174f, rect.y + 1f, rect.width - 238f, 18f),
+                value,
+                0f,
+                maximum);
+            if (Mathf.Abs(nextValue - value) >= 1f)
+            {
+                if (input)
+                {
+                    voiceManager.SetInputVolume(Mathf.Round(nextValue));
+                }
+                else
+                {
+                    voiceManager.SetOutputVolume(Mathf.Round(nextValue));
+                }
+            }
         }
 
         private void DrawMap(Rect rect)
@@ -787,7 +1146,7 @@ namespace DndProximityVoice.Map
                 MapScrollbarSize,
                 viewportRect.height);
             var previousEnabled = GUI.enabled;
-            GUI.enabled = previousEnabled && !burgerMenuOpen;
+            GUI.enabled = previousEnabled && !IsModalDrawerOpen;
             mapScroll.x = GUI.HorizontalScrollbar(
                 horizontalRect,
                 mapScroll.x,
@@ -1112,7 +1471,7 @@ namespace DndProximityVoice.Map
         private void HandleMapWheel(Rect viewportRect, Vector2 mapSizeMeters, Event currentEvent)
         {
             // The map is drawn before the drawers, so it must not consume their wheel events.
-            if (burgerMenuOpen)
+            if (IsModalDrawerOpen)
             {
                 return;
             }
@@ -1300,6 +1659,19 @@ namespace DndProximityVoice.Map
                 TokenSize,
                 TokenSize);
             var oldColor = GUI.color;
+            var isSpeaking = player.IsConnected && voiceManager != null &&
+                             voiceManager.IsUserSpeaking(player.DiscordUserId);
+
+            if (isSpeaking)
+            {
+                var pulse = 8f + Mathf.Sin(Time.unscaledTime * 8f) * 3f;
+                GUI.color = new Color(AppUiTheme.Success.r, AppUiTheme.Success.g, AppUiTheme.Success.b, 0.62f);
+                GUI.DrawTexture(
+                    new Rect(tokenRect.x - pulse, tokenRect.y - pulse, tokenRect.width + pulse * 2f, tokenRect.height + pulse * 2f),
+                    selectionTexture,
+                    ScaleMode.StretchToFill,
+                    true);
+            }
 
             GUI.color = new Color(0f, 0f, 0f, 0.52f);
             GUI.DrawTexture(
@@ -1339,6 +1711,24 @@ namespace DndProximityVoice.Map
                     true);
             }
 
+            if (player.IsLocal && voiceManager != null && (voiceManager.IsSelfMuted || voiceManager.IsSelfDeafened))
+            {
+                var state = voiceManager.IsSelfDeafened ? "AUDIO OFF" : "MUTE";
+                AppUiTheme.DrawPill(
+                    new Rect(tokenRect.x - 8f, tokenRect.yMax - 3f, 72f, 20f),
+                    state,
+                    AppUiTheme.Danger,
+                    AppUiTheme.EyebrowSmallCentered);
+            }
+            else if (isSpeaking)
+            {
+                AppUiTheme.DrawPill(
+                    new Rect(tokenRect.x - 3f, tokenRect.yMax - 1f, 66f, 20f),
+                    "PARLA",
+                    AppUiTheme.Success,
+                    AppUiTheme.EyebrowSmallCentered);
+            }
+
             GUI.color = oldColor;
             GUI.Label(
                 new Rect(tokenRect.x - 62f, tokenRect.yMax + 5f, tokenRect.width + 124f, 22f),
@@ -1352,6 +1742,7 @@ namespace DndProximityVoice.Map
             if (GUI.Button(burgerRect, burgerMenuOpen ? "×" : "☰", AppUiTheme.IconButton))
             {
                 burgerMenuOpen = !burgerMenuOpen;
+                audioSettingsOpen = false;
                 if (!burgerMenuOpen)
                 {
                     playersDrawerOpen = false;
@@ -1805,7 +2196,7 @@ namespace DndProximityVoice.Map
             bool pointerInsideViewport,
             Event currentEvent)
         {
-            if (burgerMenuOpen)
+            if (IsModalDrawerOpen)
             {
                 draggingPlayerId = 0;
                 wallDragActive = false;
@@ -1987,7 +2378,8 @@ namespace DndProximityVoice.Map
         private void HandleVoiceModeShortcuts()
         {
             var currentEvent = Event.current;
-            if (currentEvent.type != EventType.KeyDown)
+            if (currentEvent.type != EventType.KeyDown ||
+                string.Equals(GUI.GetNameOfFocusedControl(), "SavedMapName", StringComparison.Ordinal))
             {
                 return;
             }
@@ -2017,6 +2409,52 @@ namespace DndProximityVoice.Map
             {
                 playerManager.TrySetLocalVoiceMode(voiceMode);
                 currentEvent.Use();
+            }
+        }
+
+        private void HandlePushToTalkShortcut()
+        {
+            var currentEvent = Event.current;
+            if (currentEvent.type == EventType.KeyDown && currentEvent.keyCode == KeyCode.Escape && audioSettingsOpen)
+            {
+                audioSettingsOpen = false;
+                currentEvent.Use();
+                return;
+            }
+
+            if (voiceManager == null || !voiceManager.PushToTalkEnabled || currentEvent.keyCode != KeyCode.V ||
+                string.Equals(GUI.GetNameOfFocusedControl(), "SavedMapName", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            if (currentEvent.type == EventType.KeyDown)
+            {
+                voiceManager.SetPushToTalkPressed(true);
+                currentEvent.Use();
+            }
+            else if (currentEvent.type == EventType.KeyUp)
+            {
+                voiceManager.SetPushToTalkPressed(false);
+                currentEvent.Use();
+            }
+        }
+
+        private static Color GetAudibilityColor(VoiceAudibilityLevel level)
+        {
+            switch (level)
+            {
+                case VoiceAudibilityLevel.Clear:
+                    return AppUiTheme.Success;
+                case VoiceAudibilityLevel.Attenuated:
+                    return AppUiTheme.Warning;
+                case VoiceAudibilityLevel.Faint:
+                    return AppUiTheme.AccentBright;
+                case VoiceAudibilityLevel.Blocked:
+                case VoiceAudibilityLevel.OutOfRange:
+                    return AppUiTheme.Danger;
+                default:
+                    return AppUiTheme.Muted;
             }
         }
 

@@ -3,6 +3,7 @@
 [← README principale](../README.md) · [English documentation](README_EN.md) ·
 [Roadmap prodotto 2.0](ROADMAP_2_0_IT.md) ·
 [Architettura modalità](ARCHITECTURE_MODES_IT.md) ·
+[Design system UI](UI_DESIGN_SYSTEM_IT.md) ·
 [Kanban GitHub](https://github.com/users/dragonart19/projects/1/views/1)
 
 > Prova programmata: **6 settembre 2026, ore 10:30 Europe/Rome, 7 partecipanti
@@ -163,6 +164,8 @@ una migrazione automatica dell'host.
 | Sussurro | `1` |
 | Voce normale | `2` |
 | Urlo | `3` |
+| Push-to-talk | Tieni premuto `V` quando attivo |
+| Conferma codice sessione | `Invio` nel campo codice |
 | Zoom mappa | `Ctrl + rotellina` |
 | Scorrimento verticale | Rotellina |
 | Scorrimento orizzontale | `Shift + rotellina` |
@@ -175,6 +178,13 @@ Il menu burger in alto a sinistra contiene gli strumenti di costruzione e il
 pannello richiudibile dei giocatori connessi, così la mappa resta libera. I
 pannelli intercettano i clic: un comando UI non deve muovere una pedina o
 disegnare un muro sottostante.
+
+Il pannello **Impostazioni audio** consente di scegliere microfono e uscita,
+regolare i volumi, usare una soglia voce automatica o manuale, disattivare
+l'ascolto e attivare il push-to-talk. Il pannello giocatori ordina prima
+l'utente locale, chi sta parlando e gli utenti connessi; parlato e udibilità
+sono comunicati anche con testo, simboli e barre segmentate. Palette, spacing,
+stati e checklist sono descritti nel [design system UI](UI_DESIGN_SYSTEM_IT.md).
 
 ### Copiare il codice e aprire i file locali
 
@@ -520,11 +530,10 @@ un'area da validare e migliorare.
 - massimo pratico corrente: 8 partecipanti totali;
 - niente migrazione host automatica;
 - tre tentativi automatici della voce e conservazione della sessione durante
-  brevi riconnessioni Discord; recupero completo e cambio dispositivo restano incompleti;
+  brevi riconnessioni Discord; il recupero dopo interruzioni prolungate resta incompleto;
 - pan stereo dipendente dal formato PCM disponibile;
 - nessun filtro passa-basso/reverb nel percorso Discord Direct;
-- nessuna selezione di microfono e uscita dentro l'app;
-- nessun controllo volume master o per singolo utente nell'interfaccia;
+- nessun test livello microfono o volume per singolo utente;
 - salvataggi solo locali;
 - niente avatar Discord completi: la visuale usa soprattutto iniziali e colori;
 - interfaccia testuale principalmente italiana;
@@ -545,9 +554,8 @@ un'area da validare e migliorare.
 
 ### Priorità 2 — controlli audio
 
-- scelta del microfono e del dispositivo di uscita;
 - test microfono e indicatore di livello;
-- volume master, volume per giocatore e mute manuale;
+- volume per giocatore e mute DM sul singolo partecipante;
 - intensità audio spaziale configurabile;
 - filtro passa-basso attraverso muri e porte;
 - profili anti-eco e diagnostica del doppio ascolto;
@@ -559,7 +567,7 @@ un'area da validare e migliorare.
 - teletrasporto e blocco pedine;
 - mute/isola per singolo giocatore;
 - editor più ricco per porte, nomi stanza e proprietà acustiche;
-- visualizzazione “chi sente chi” con indicatori chiari verde/giallo/rosso;
+- vista globale “chi sente chi” per il DM;
 - annulla/ripristina e cronologia delle modifiche;
 - import/export delle mappe.
 
@@ -574,9 +582,9 @@ un'area da validare e migliorare.
 
 ### Priorità 5 — esperienza e pubblicazione
 
-- avatar Discord, animazione di chi parla e transizioni UI;
-- tooltip, onboarding e scorciatoie rimappabili;
-- scala UI, contrasto, modalità daltonismo e navigazione tastiera;
+- avatar Discord completi e transizioni tra schermate;
+- onboarding e scorciatoie rimappabili;
+- modalità daltonismo dedicata e navigazione controller completa;
 - localizzazione completa italiano/inglese;
 - build macOS/Linux dopo verifica del supporto SDK;
 - installer, firma digitale, aggiornamenti e release GitHub automatizzate;

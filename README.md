@@ -10,8 +10,8 @@ privati.
 > V2 Preview e partono dalla base 1.0.1 verificata. Ogni modifica alla rete o
 > alla voce richiede una nuova validazione con più client.
 
-La suite della base V2 riallineata è stata eseguita il 7 settembre alle 13:43
-UTC con Unity `6000.3.8f1`: **57/57 test EditMode superati**, zero falliti o
+La suite V2 è stata eseguita il 7 settembre con Unity `6000.3.8f1` dopo il
+redesign dell'interfaccia: **65/65 test EditMode superati**, zero falliti o
 saltati e nessun errore di compilazione.
 
 [Documentazione completa in italiano](docs/README_IT.md) ·
@@ -21,7 +21,9 @@ saltati e nessun errore di compilazione.
 [Kanban GitHub V2](https://github.com/users/dragonart19/projects/1/views/1) ·
 [Roadmap prodotto 2.0](docs/ROADMAP_2_0_IT.md) ·
 [Product Roadmap 2.0](docs/ROADMAP_2_0_EN.md) ·
-[Architettura modalità](docs/ARCHITECTURE_MODES_IT.md)
+[Architettura modalità](docs/ARCHITECTURE_MODES_IT.md) ·
+[Design system UI](docs/UI_DESIGN_SYSTEM_IT.md) ·
+[UI design system](docs/UI_DESIGN_SYSTEM_EN.md)
 
 ## Esito della prova del 6 settembre
 
@@ -70,6 +72,7 @@ nel [Kanban GitHub ufficiale](https://github.com/users/dragonart19/projects/1/vi
 | Accesso | ✅ | OAuth2 Discord con PKCE, senza client secret nel progetto |
 | Sessioni | ✅ | Creazione e ingresso tramite codice di 6 caratteri |
 | Voce | ✅ | Chiamata Discord con attenuazione e tre tentativi automatici di ripristino, validata nella checklist A–D |
+| Controlli audio V2 | ✅ | Scelta input/output, volumi, sensibilità automatica/manuale, mute, deafen e push-to-talk |
 | Audio spaziale | 🟡 | Volume posizionale attivo; la direzione stereo dipende dai canali PCM forniti dal SDK |
 | Mappa | ✅ | Mappa condivisa, pedine sincronizzate, trascinamento DM e raggio vocale |
 | Navigazione | ✅ | Mappa ridimensionabile, barre di scorrimento e zoom con `Ctrl + rotellina` |
@@ -77,7 +80,7 @@ nel [Kanban GitHub ufficiale](https://github.com/users/dragonart19/projects/1/vi
 | Acustica | 🟡 | Muri spessi quasi opachi nella 1.0.1; filtro passa-basso e riverbero sono pianificati |
 | Gruppi | ✅ | Gruppi vocali privati A/B/C come regola di mix dell'app |
 | Salvataggi | ✅ | Salvataggio, caricamento ed eliminazione locale delle mappe |
-| Interfaccia | ✅ | Tema fantasy, menu laterale e pannello giocatori richiudibili |
+| Interfaccia | ✅ | Design system fantasy, safe area, scala responsive, tooltip, stati accessibili e pannelli richiudibili |
 | Utilità | ✅ | Copia codice sessione, apertura cartella log e accesso DM ai JSON delle mappe dal menu |
 | Modalità V2 | 🟡 | Selettore 2D/3D separato; Tavolo 2D disponibile, World Builder 3D ancora disabilitato |
 
@@ -109,13 +112,17 @@ entrare e inserisce lo stesso codice.
 ## Comandi essenziali
 
 - `1`, `2`, `3`: Sussurro, Normale, Urlo.
+- `V` tenuto premuto: trasmette quando il push-to-talk è attivo.
+- `Invio`: conferma un codice sessione valido mentre il campo è selezionato.
 - Trascinamento pedina: spostamento sulla mappa; il DM controlla le pedine.
 - `Ctrl + rotellina`: zoom centrato sul puntatore.
 - Rotellina: scorrimento verticale; `Shift + rotellina`: orizzontale.
-- `Esc`: annulla il muro o la porta in costruzione.
+- `Esc`: chiude le impostazioni audio oppure annulla il muro o la porta in costruzione.
 - `Canc`/`Backspace`: elimina l'elemento di costruzione selezionato.
 - Menu burger → **COPIA**: copia il codice sessione senza spazi.
 - Menu burger → **UTILITÀ**: apre i log locali; il DM può aprire anche le mappe salvate.
+- **IMPOSTAZIONI AUDIO**: sceglie i dispositivi e regola volume, sensibilità,
+  deafen e push-to-talk senza modificare il percorso PCM.
 
 Con il menu aperto, trascinamento, barre di scorrimento e rotellina della mappa
 sono sospesi per evitare interazioni con gli elementi sottostanti.
@@ -140,13 +147,12 @@ sono sospesi per evitare interazioni con gli elementi sottostanti.
 ## Roadmap sintetica
 
 - diagnostica di riconnessione e test multi-client ripetibili;
-- selezione microfono/uscita, test livello e controlli volume;
-- indicatore chi-sente-chi più leggibile;
+- test livello microfono e volume per singolo giocatore;
 - telepatia e comunicazioni magiche;
 - sorgenti ambientali posizionali, riverbero e acustica avanzata;
 - selezione multipla, movimento di gruppo e teletrasporto DM;
 - campagne, preset di ambientazione e salvataggi cloud/esportabili;
-- accessibilità, ridimensionamento UI, localizzazione e build multipiattaforma.
+- navigazione controller completa, localizzazione e build multipiattaforma.
 
 La roadmap dettagliata, l'architettura, il comportamento acustico, il formato
 dei salvataggi, la procedura di build e la risoluzione dei problemi sono nella
@@ -172,7 +178,9 @@ docs/
 ├── PLAYTEST_2026_09_06_IT.md    piano, checklist ed esiti della prova a 7
 ├── PLAYTEST_2026_09_06_EN.md    seven-person playtest plan and results
 ├── ARCHITECTURE_MODES_IT.md      confini Build 1.0.1, 2D e 3D
-└── ARCHITECTURE_MODES_EN.md      Build 1.0.1, 2D, and 3D boundaries
+├── ARCHITECTURE_MODES_EN.md      Build 1.0.1, 2D, and 3D boundaries
+├── UI_DESIGN_SYSTEM_IT.md        token, componenti e regole UX V2
+└── UI_DESIGN_SYSTEM_EN.md        V2 tokens, components, and UX rules
 ```
 
 ## Sicurezza e licenza

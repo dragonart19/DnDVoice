@@ -11,6 +11,22 @@ using UnityEngine;
 
 namespace DndProximityVoice.Voice
 {
+    public readonly struct DiscordAudioDeviceInfo
+    {
+        public DiscordAudioDeviceInfo(string id, string name, bool isDefault)
+        {
+            Id = id ?? string.Empty;
+            Name = string.IsNullOrWhiteSpace(name) ? "Dispositivo senza nome" : name;
+            IsDefault = isDefault;
+        }
+
+        public string Id { get; }
+
+        public string Name { get; }
+
+        public bool IsDefault { get; }
+    }
+
     [DisallowMultipleComponent]
     public sealed class DiscordVoiceManager : MonoBehaviour
     {
@@ -36,16 +52,49 @@ namespace DndProximityVoice.Voice
         private bool voiceRequested;
         private int automaticRestartAttempts;
         private float restartVoiceAt = -1f;
+        private readonly List<DiscordAudioDeviceInfo> inputDevices = new List<DiscordAudioDeviceInfo>();
+        private readonly List<DiscordAudioDeviceInfo> outputDevices = new List<DiscordAudioDeviceInfo>();
+        private bool muteBeforePushToTalk;
 
         public event Action<DiscordVoiceState> StateChanged;
 
         public event Action VoiceParticipantsChanged;
+
+        public event Action AudioSettingsChanged;
 
         public DiscordVoiceState State { get; private set; } = DiscordVoiceState.Unavailable;
 
         public string ErrorMessage { get; private set; } = string.Empty;
 
         public bool IsSelfMuted { get; private set; }
+
+        public bool IsSelfDeafened { get; private set; }
+
+        public bool PushToTalkEnabled { get; private set; }
+
+        public bool IsPushToTalkPressed { get; private set; }
+
+        public bool AutomaticVoiceSensitivity { get; private set; } = true;
+
+        public float VoiceSensitivityDb { get; private set; } = -60f;
+
+        public float InputVolume { get; private set; } = 100f;
+
+        public float OutputVolume { get; private set; } = 100f;
+
+        public string CurrentInputDeviceId { get; private set; } = string.Empty;
+
+        public string CurrentInputDeviceName { get; private set; } = "Predefinito di sistema";
+
+        public string CurrentOutputDeviceId { get; private set; } = string.Empty;
+
+        public string CurrentOutputDeviceName { get; private set; } = "Predefinito di sistema";
+
+        public string AudioSettingsMessage { get; private set; } = string.Empty;
+
+        public IReadOnlyList<DiscordAudioDeviceInfo> InputDevices => inputDevices;
+
+        public IReadOnlyList<DiscordAudioDeviceInfo> OutputDevices => outputDevices;
 
         public long CapturedFrameCount => Interlocked.Read(ref capturedFrameCount);
 
@@ -178,6 +227,19 @@ namespace DndProximityVoice.Voice
                 call.SetSpeakingStatusChangedCallback(OnSpeakingStatusChanged);
                 call.SetOnVoiceStateChangedCallback(OnVoiceStateChanged);
                 IsSelfMuted = call.GetSelfMute();
+                IsSelfDeafened = call.GetSelfDeaf();
+                using (var vadSettings = call.GetVADThreshold())
+                {
+                    AutomaticVoiceSensitivity = vadSettings.Automatic();
+                    VoiceSensitivityDb = Mathf.Clamp(vadSettings.VadThreshold(), -100f, 0f);
+                }
+
+                if (PushToTalkEnabled)
+                {
+                    SetSelfMuteInternal(true);
+                }
+
+                RefreshAudioSettings();
                 OnCallStatusChanged(call.GetStatus(), Call.Error.None, 0);
             }
             catch (Exception exception)
@@ -226,14 +288,163 @@ namespace DndProximityVoice.Voice
 
             try
             {
-                IsSelfMuted = !IsSelfMuted;
-                call.SetSelfMute(IsSelfMuted);
-                VoiceParticipantsChanged?.Invoke();
+                if (PushToTalkEnabled)
+                {
+                    muteBeforePushToTalk = !muteBeforePushToTalk;
+                    SetSelfMuteInternal(muteBeforePushToTalk || !IsPushToTalkPressed);
+                }
+                else
+                {
+                    SetSelfMuteInternal(!IsSelfMuted);
+                }
             }
             catch (Exception exception)
             {
                 Fail("Non è stato possibile cambiare lo stato del microfono.", exception);
             }
+        }
+
+        public void ToggleSelfDeafen()
+        {
+            if (call == null || State != DiscordVoiceState.Connected)
+            {
+                return;
+            }
+
+            try
+            {
+                IsSelfDeafened = !IsSelfDeafened;
+                call.SetSelfDeaf(IsSelfDeafened);
+                AudioSettingsMessage = IsSelfDeafened ? "Audio in uscita disattivato." : "Audio in uscita riattivato.";
+                AudioSettingsChanged?.Invoke();
+            }
+            catch (Exception exception)
+            {
+                ReportAudioSettingsError("Non è stato possibile cambiare lo stato delle cuffie.", exception);
+            }
+        }
+
+        public void SetPushToTalkEnabled(bool enabled)
+        {
+            if (PushToTalkEnabled == enabled)
+            {
+                return;
+            }
+
+            PushToTalkEnabled = enabled;
+            IsPushToTalkPressed = false;
+            if (enabled)
+            {
+                muteBeforePushToTalk = IsSelfMuted;
+                SetSelfMuteInternal(true);
+                AudioSettingsMessage = "Push-to-talk attivo: tieni premuto V per parlare.";
+            }
+            else
+            {
+                SetSelfMuteInternal(muteBeforePushToTalk);
+                AudioSettingsMessage = "Modalità voce attiva ripristinata.";
+            }
+
+            AudioSettingsChanged?.Invoke();
+        }
+
+        public void SetPushToTalkPressed(bool pressed)
+        {
+            if (!PushToTalkEnabled || IsPushToTalkPressed == pressed)
+            {
+                return;
+            }
+
+            IsPushToTalkPressed = pressed;
+            SetSelfMuteInternal(muteBeforePushToTalk || !pressed);
+            AudioSettingsChanged?.Invoke();
+        }
+
+        public void SetInputVolume(float volume)
+        {
+            var client = authManager?.Client;
+            if (client == null)
+            {
+                return;
+            }
+
+            try
+            {
+                InputVolume = Mathf.Clamp(volume, 0f, 100f);
+                client.SetInputVolume(InputVolume);
+                AudioSettingsChanged?.Invoke();
+            }
+            catch (Exception exception)
+            {
+                ReportAudioSettingsError("Non è stato possibile cambiare il volume del microfono.", exception);
+            }
+        }
+
+        public void SetOutputVolume(float volume)
+        {
+            var client = authManager?.Client;
+            if (client == null)
+            {
+                return;
+            }
+
+            try
+            {
+                OutputVolume = Mathf.Clamp(volume, 0f, 200f);
+                client.SetOutputVolume(OutputVolume);
+                AudioSettingsChanged?.Invoke();
+            }
+            catch (Exception exception)
+            {
+                ReportAudioSettingsError("Non è stato possibile cambiare il volume delle cuffie.", exception);
+            }
+        }
+
+        public void SetAutomaticVoiceSensitivity(bool automatic)
+        {
+            AutomaticVoiceSensitivity = automatic;
+            ApplyVoiceSensitivity();
+        }
+
+        public void SetVoiceSensitivity(float thresholdDb)
+        {
+            VoiceSensitivityDb = Mathf.Clamp(thresholdDb, -100f, 0f);
+            ApplyVoiceSensitivity();
+        }
+
+        public void RefreshAudioSettings()
+        {
+            var client = authManager?.Client;
+            if (client == null)
+            {
+                return;
+            }
+
+            try
+            {
+                InputVolume = Mathf.Clamp(client.GetInputVolume(), 0f, 100f);
+                OutputVolume = Mathf.Clamp(client.GetOutputVolume(), 0f, 200f);
+                client.GetInputDevices(OnInputDevicesReceived);
+                client.GetOutputDevices(OnOutputDevicesReceived);
+                client.GetCurrentInputDevice(OnCurrentInputDeviceReceived);
+                client.GetCurrentOutputDevice(OnCurrentOutputDeviceReceived);
+                AudioSettingsMessage = "Dispositivi audio aggiornati.";
+                AudioSettingsChanged?.Invoke();
+            }
+            catch (Exception exception)
+            {
+                ReportAudioSettingsError("Non è stato possibile leggere i dispositivi audio.", exception);
+            }
+        }
+
+        public void CycleInputDevice(int direction)
+        {
+            CycleDevice(inputDevices, CurrentInputDeviceId, direction, true);
+        }
+
+        public void CycleOutputDevice(int direction)
+        {
+            CycleDevice(outputDevices, CurrentOutputDeviceId, direction, false);
         }
 
         public bool IsUserSpeaking(ulong userId)
@@ -248,6 +459,202 @@ namespace DndProximityVoice.Voice
         {
             ApplyRemoteSpatialPositionsIfNeeded();
             RestartVoiceIfDue();
+        }
+
+        private void SetSelfMuteInternal(bool muted)
+        {
+            if (call == null)
+            {
+                IsSelfMuted = muted;
+                return;
+            }
+
+            try
+            {
+                IsSelfMuted = muted;
+                call.SetSelfMute(IsSelfMuted);
+                VoiceParticipantsChanged?.Invoke();
+            }
+            catch (Exception exception)
+            {
+                ReportAudioSettingsError("Non è stato possibile cambiare lo stato del microfono.", exception);
+            }
+        }
+
+        private void ApplyVoiceSensitivity()
+        {
+            if (call == null || State != DiscordVoiceState.Connected)
+            {
+                AudioSettingsChanged?.Invoke();
+                return;
+            }
+
+            try
+            {
+                call.SetVADThreshold(AutomaticVoiceSensitivity, VoiceSensitivityDb);
+                AudioSettingsMessage = AutomaticVoiceSensitivity
+                    ? "Sensibilità automatica attiva."
+                    : $"Soglia microfono impostata a {VoiceSensitivityDb:0} dB.";
+                AudioSettingsChanged?.Invoke();
+            }
+            catch (Exception exception)
+            {
+                ReportAudioSettingsError("Non è stato possibile cambiare la sensibilità del microfono.", exception);
+            }
+        }
+
+        private void OnInputDevicesReceived(AudioDevice[] devices)
+        {
+            ReplaceDeviceList(inputDevices, devices);
+            AudioSettingsChanged?.Invoke();
+        }
+
+        private void OnOutputDevicesReceived(AudioDevice[] devices)
+        {
+            ReplaceDeviceList(outputDevices, devices);
+            AudioSettingsChanged?.Invoke();
+        }
+
+        private void OnCurrentInputDeviceReceived(AudioDevice device)
+        {
+            ReadCurrentDevice(device, out var id, out var name);
+            CurrentInputDeviceId = id;
+            CurrentInputDeviceName = name;
+            AudioSettingsChanged?.Invoke();
+        }
+
+        private void OnCurrentOutputDeviceReceived(AudioDevice device)
+        {
+            ReadCurrentDevice(device, out var id, out var name);
+            CurrentOutputDeviceId = id;
+            CurrentOutputDeviceName = name;
+            AudioSettingsChanged?.Invoke();
+        }
+
+        private void CycleDevice(
+            List<DiscordAudioDeviceInfo> devices,
+            string currentId,
+            int direction,
+            bool input)
+        {
+            var client = authManager?.Client;
+            if (client == null || devices.Count == 0 || direction == 0)
+            {
+                return;
+            }
+
+            var currentIndex = 0;
+            for (var index = 0; index < devices.Count; index++)
+            {
+                if (devices[index].Id == currentId)
+                {
+                    currentIndex = index;
+                    break;
+                }
+            }
+
+            var nextIndex = (currentIndex + (direction > 0 ? 1 : -1) + devices.Count) % devices.Count;
+            var next = devices[nextIndex];
+            try
+            {
+                if (input)
+                {
+                    client.SetInputDevice(next.Id, result => OnDeviceChanged(result, next, true));
+                }
+                else
+                {
+                    client.SetOutputDevice(next.Id, result => OnDeviceChanged(result, next, false));
+                }
+            }
+            catch (Exception exception)
+            {
+                ReportAudioSettingsError("Non è stato possibile cambiare dispositivo audio.", exception);
+            }
+        }
+
+        private void OnDeviceChanged(ClientResult result, DiscordAudioDeviceInfo device, bool input)
+        {
+            if (!result.Successful())
+            {
+                ReportAudioSettingsError("Discord ha rifiutato il cambio del dispositivo audio.");
+                return;
+            }
+
+            if (input)
+            {
+                CurrentInputDeviceId = device.Id;
+                CurrentInputDeviceName = device.Name;
+            }
+            else
+            {
+                CurrentOutputDeviceId = device.Id;
+                CurrentOutputDeviceName = device.Name;
+            }
+
+            AudioSettingsMessage = $"Dispositivo {(input ? "microfono" : "cuffie")} aggiornato.";
+            AudioSettingsChanged?.Invoke();
+        }
+
+        private static void ReplaceDeviceList(List<DiscordAudioDeviceInfo> target, AudioDevice[] devices)
+        {
+            target.Clear();
+            if (devices == null)
+            {
+                return;
+            }
+
+            foreach (var device in devices)
+            {
+                if (device == null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    target.Add(new DiscordAudioDeviceInfo(device.Id(), device.Name(), device.IsDefault()));
+                }
+                finally
+                {
+                    device.Dispose();
+                }
+            }
+        }
+
+        private static void ReadCurrentDevice(AudioDevice device, out string id, out string name)
+        {
+            id = string.Empty;
+            name = "Predefinito di sistema";
+            if (device == null)
+            {
+                return;
+            }
+
+            try
+            {
+                id = device.Id();
+                var detectedName = device.Name();
+                name = string.IsNullOrWhiteSpace(detectedName) ? name : detectedName;
+            }
+            finally
+            {
+                device.Dispose();
+            }
+        }
+
+        private void ReportAudioSettingsError(string message, Exception exception = null)
+        {
+            AudioSettingsMessage = message;
+            if (exception == null)
+            {
+                Debug.LogWarning(message);
+            }
+            else
+            {
+                Debug.LogWarning($"{message} {exception.Message}");
+            }
+
+            AudioSettingsChanged?.Invoke();
         }
 
         private void OnPlayersChanged()
@@ -480,6 +887,7 @@ namespace DndProximityVoice.Voice
             if (userId == authManager?.CurrentUser?.Id && call != null)
             {
                 IsSelfMuted = call.GetSelfMute();
+                IsSelfDeafened = call.GetSelfDeaf();
             }
 
             VoiceParticipantsChanged?.Invoke();
@@ -622,6 +1030,8 @@ namespace DndProximityVoice.Voice
             call = null;
             activeLobbyId = 0;
             IsSelfMuted = false;
+            IsSelfDeafened = false;
+            IsPushToTalkPressed = false;
             lock (speakingUsersLock)
             {
                 speakingUsers.Clear();
@@ -697,6 +1107,14 @@ namespace DndProximityVoice.Voice
             playerManager = null;
             tacticalMapManager = null;
             authManager = null;
+        }
+
+        private void OnApplicationFocus(bool hasFocus)
+        {
+            if (!hasFocus && PushToTalkEnabled)
+            {
+                SetPushToTalkPressed(false);
+            }
         }
 
         private sealed class DirectPcmPanner
