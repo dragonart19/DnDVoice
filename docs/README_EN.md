@@ -30,28 +30,32 @@ Design principles:
 - never store private credentials in the client or repository;
 - prioritize uninterrupted speech over the lowest theoretical latency.
 
-## 2. Build 1.0 status
+## 2. Build 1.0.1 Hotfix status
 
-Build 1.0 is a playable Windows prototype. The full primary flow exists:
+[Build 1.0.1 hotfix details and checklist](HOTFIX_1_0_1_EN.md).
+
+Build 1.0.1 is the hotfix following the real September 6 playtest. The full primary flow exists:
 Discord login, coded sessions, shared map, tokens, proximity voice, walls,
 doors, rooms, groups, and local saves.
 
-This is not a final production release. Every networking or audio-path change
-must be validated with at least two PCs and two Discord accounts.
+The seven-person group responded positively to the product, but the newest
+candidate showed insufficient occlusion and disconnections before play. This
+hotfix is not a final production release: it must be validated with at least
+two PCs and two Discord accounts before publication.
 
 | Area | Status | Details |
 | --- | :---: | --- |
 | Discord OAuth | ✅ | PKCE, Public Client, and local redirect |
 | Sessions | ✅ | Create/join with a six-character code |
-| Discord Direct voice | ✅ | Native call playback without a Unity audio queue |
+| Discord Direct voice | 🟡 | Native playback plus three automatic recovery attempts, pending validation |
 | Distance attenuation | ✅ | Computed locally for every participant |
 | Stereo direction | 🟡 | Available only when the callback supplies at least two PCM channels |
 | Map and tokens | ✅ | DM-authoritative state with client interpolation |
 | Walls, doors, and rooms | ✅ | Drawing, snapping, thickness, door states, and room detection |
-| Occlusion | 🟡 | Volume attenuation works; low-pass filtering is not active |
+| Occlusion | 🟡 | Thick walls are nearly opaque; low-pass filtering is not active |
 | Private groups | ✅ | Groups A/B/C applied as a local application mixing rule |
 | Saved maps | ✅ | Local JSON persistence |
-| Reconnection | 🟡 | Basic error handling exists; full recovery needs hardening |
+| Reconnection | 🟡 | Lobby/Relay survive short Discord transitions; no host migration |
 | Advanced immersive features | ⬜ | Telepathy, ambient sound, reverb, and presets |
 
 Legend: ✅ available · 🟡 partial or needs validation · ⬜ planned.
@@ -241,6 +245,12 @@ Every segment crossing the line between speaker and listener reduces volume.
 Thicker walls produce more attenuation. Open doors do not obstruct voice;
 closed and locked doors do.
 
+In Build 1.0.1, a minimum `0.2 m` wall leaves about `66%` of the unobstructed
+gain, while a maximum `2 m` wall reduces it to about `2%`. Distance and voice
+mode still multiply this value. Multiple crossed walls add occlusion up to its
+maximum. These are initial values derived from playtest feedback and require a
+new headphone check.
+
 The original design also called for a low-pass filter to make obstructed voices
 sound muffled. In Discord Direct mode, participant volume is applied directly
 to the native call, but that filter is not inserted into the current audio path.
@@ -271,7 +281,7 @@ the maximum range.
 
 An earlier version copied PCM into a Unity queue to gain full control over pan
 and filters. When that queue was made too short, speech started cutting out due
-to underflow. Build 1.0 delegates continuity and jitter buffering to Discord's
+to underflow. Build 1.0.1 delegates continuity and jitter buffering to Discord's
 native path and applies per-participant volume.
 
 This removes the fragile custom playback queue and prioritizes stability. An
@@ -388,13 +398,13 @@ playback queue in Discord Direct mode.
 Use this Unity menu command:
 
 ```text
-D&D Proximity Voice > Build Windows 1.0
+D&D Proximity Voice > Build Windows 1.0.1 Hotfix
 ```
 
 The editor script creates an x64 release build under:
 
 ```text
-Builds/DnDProximityVoice-Windows-BUILD-1.0
+Builds/DnDProximityVoice-Windows-BUILD-1.0.1-HOTFIX
 ```
 
 It also prepares a shareable ZIP archive. Distribute the full folder or ZIP,
@@ -416,6 +426,8 @@ all tests. The suite covers core areas including:
 - session-code generation and normalization;
 - voice-mode ranges and attenuation curves;
 - obstacle intersections and attenuation;
+- session preservation during a temporary Discord transition and the bounded
+  voice-retry policy;
 - PCM conversion and bounded behavior of the previous audio queue;
 - map and room data logic where currently covered.
 - menu regressions: plain, `Ctrl`, and `Shift` wheel input do not change the
@@ -431,11 +443,13 @@ Minimum checklist before sharing a build:
 5. tokens move smoothly and synchronize in both instances;
 6. modes `1/2/3` are visible and audible;
 7. volume changes inside and outside the current range;
-8. a thick wall attenuates more than a thin wall;
+8. a `2 m` wall makes speech nearly inaudible while a thin wall remains distinguishable;
 9. opening/closing a door changes sound and synchronizes;
 10. save, load, and delete a map;
 11. leave cleanly and join again without restarting Discord;
-12. maintain a 10–15 minute conversation without recurring audio cuts.
+12. maintain a conversation for at least 30 minutes without recurring cuts;
+13. briefly interrupt one guest's network: voice should retry without making
+    the session disappear immediately; record DM behavior separately.
 
 ## 17. Troubleshooting
 
@@ -467,7 +481,7 @@ the project, then reopen it with the correct Unity version. Never delete
 
 ### Voice cuts out
 
-- use Build 1.0 Discord Direct, not an experimental Unity-queue build;
+- use Build 1.0.1 Discord Direct, not an experimental Unity-queue build;
 - check network stability and CPU load;
 - use headphones and close duplicate voice channels;
 - preserve complete logs from both computers with the interruption timestamp.
@@ -483,7 +497,8 @@ and improvement.
 - Windows is the only assumed target for the first release;
 - practical current maximum: eight total participants;
 - no automatic host migration;
-- no full recovery after network or audio-device changes;
+- three automatic voice attempts and session preservation during short Discord
+  reconnects; full recovery and device changes remain incomplete;
 - stereo pan depends on the available PCM format;
 - no low-pass filter or reverb in Discord Direct mode;
 - no in-app input/output device picker;
@@ -500,7 +515,7 @@ and improvement.
 ### Priority 1 — reliability
 
 - repeatable automated and manual multi-client testing;
-- lobby, Relay, and call recovery after a network interruption;
+- complete lobby and Relay recovery after an extended network interruption;
 - DM disconnection handling and possible host migration;
 - safe local diagnostics for dropouts, jitter, and SDK state without tokens;
 - confirm player limits and load-test four to eight users;

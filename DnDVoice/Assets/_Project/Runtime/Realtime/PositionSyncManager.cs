@@ -543,7 +543,9 @@ namespace DndProximityVoice.Realtime
             if (networkManager != null && !networkManager.IsHost && clientId == networkManager.LocalClientId &&
                 sessionManager?.State == DiscordSessionState.Joined)
             {
-                Fail("La sincronizzazione della mappa si è disconnessa.");
+                Fail(
+                    $"La sincronizzazione della mappa si è disconnessa " +
+                    $"a {Time.realtimeSinceStartup:0.0}s dall'avvio.");
             }
         }
 

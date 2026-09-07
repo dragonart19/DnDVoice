@@ -5,22 +5,31 @@ accesso e trasporto vocale, mentre una mappa tattica condivisa determina chi
 può sentire chi in base a distanza, modalità di voce, muri, porte e gruppi
 privati.
 
-> **Stato:** Build 1.0 · Discord Direct — prototipo Windows funzionante, ancora
-> in sviluppo e da validare con più client dopo ogni modifica alla rete o alla
-> voce.
+> **Stato:** Build 1.0.1 Hotfix · Discord Direct — correzioni successive alla
+> prova reale del 6 settembre, ancora da validare con più client prima della
+> pubblicazione. La V2 rimane separata su `develop/v2`.
 
 [Documentazione completa in italiano](docs/README_IT.md) ·
 [Full documentation in English](docs/README_EN.md) ·
+[Hotfix 1.0.1](docs/HOTFIX_1_0_1_IT.md) ·
+[Hotfix 1.0.1 English](docs/HOTFIX_1_0_1_EN.md) ·
 [Kanban GitHub V2](https://github.com/users/dragonart19/projects/1/views/1) ·
 [Roadmap prodotto 2.0](docs/ROADMAP_2_0_IT.md) ·
 [Product Roadmap 2.0](docs/ROADMAP_2_0_EN.md)
 
-## Prossima prova: 6 settembre, ore 10:30
+## Esito della prova del 6 settembre
 
-La priorità immediata è verificare la Build 1.0 **con 7 partecipanti totali,
-DM compreso**, prima di estendere il progetto. Il limite attuale di Relay è 8;
-il test reale a sette resta da eseguire. Il piano include controlli della voce,
-sincronizzazione, salvataggi, rientro e un pacchetto Windows identificabile.
+Il progetto è stato usato con **7 partecipanti totali, DM compreso**, e il
+riscontro generale è stato molto positivo. Il candidato più recente non è
+stato però usato per la sessione completa: durante la verifica precedente sono
+emersi muri spessi ancora troppo udibili e una perdita di chiamata/sessione.
+La partita è proseguita con una build precedente conservata su GitHub.
+
+Il registro locale del candidato contiene `JoinTimeout`, disconnessione Relay e
+lobby Discord non più disponibile. La Build 1.0.1 rafforza l'occlusione,
+conserva la sessione durante le riconnessioni brevi del client Discord e tenta
+fino a tre ripristini automatici della voce. Queste correzioni non sono ancora
+certificate da una nuova prova multi-client prolungata.
 
 [Piano e checklist in italiano](docs/PLAYTEST_2026_09_06_IT.md) ·
 [Playtest plan and checklist in English](docs/PLAYTEST_2026_09_06_EN.md).
@@ -50,12 +59,12 @@ nel [Kanban GitHub ufficiale](https://github.com/users/dragonart19/projects/1/vi
 | --- | :---: | --- |
 | Accesso | ✅ | OAuth2 Discord con PKCE, senza client secret nel progetto |
 | Sessioni | ✅ | Creazione e ingresso tramite codice di 6 caratteri |
-| Voce | ✅ | Chiamata Discord con attenuazione per distanza e modalità Sussurro/Normale/Urlo |
+| Voce | 🟡 | Chiamata Discord con attenuazione e tre tentativi automatici di ripristino, da validare |
 | Audio spaziale | 🟡 | Volume posizionale attivo; la direzione stereo dipende dai canali PCM forniti dal SDK |
 | Mappa | ✅ | Mappa condivisa, pedine sincronizzate, trascinamento DM e raggio vocale |
 | Navigazione | ✅ | Mappa ridimensionabile, barre di scorrimento e zoom con `Ctrl + rotellina` |
 | Costruzione | ✅ | Muri a spessore variabile, aggancio alla griglia, porte e stanze chiuse |
-| Acustica | 🟡 | Muri e porte attenuano il volume; filtro passa-basso e riverbero sono pianificati |
+| Acustica | 🟡 | Muri spessi quasi opachi nella 1.0.1; filtro passa-basso e riverbero sono pianificati |
 | Gruppi | ✅ | Gruppi vocali privati A/B/C come regola di mix dell'app |
 | Salvataggi | ✅ | Salvataggio, caricamento ed eliminazione locale delle mappe |
 | Interfaccia | ✅ | Tema fantasy, menu laterale e pannello giocatori richiudibili |
@@ -99,7 +108,7 @@ entrare e inserisce lo stesso codice.
 Con il menu aperto, trascinamento, barre di scorrimento e rotellina della mappa
 sono sospesi per evitare interazioni con gli elementi sottostanti.
 
-## Limiti importanti della Build 1.0
+## Limiti importanti della Build 1.0.1
 
 - Il target verificato è Windows; l'eseguibile non è firmato e SmartScreen può
   mostrare un avviso.
@@ -113,6 +122,8 @@ sono sospesi per evitare interazioni con gli elementi sottostanti.
   cloud delle campagne.
 - I gruppi privati sono una regola audio dell'app, non una separazione
   crittografica in chiamate Discord differenti.
+- La riconnessione automatica riguarda la chiamata vocale e le transizioni
+  brevi del client Discord; non esiste ancora migrazione automatica del DM.
 
 ## Roadmap sintetica
 
@@ -144,6 +155,8 @@ docs/
 ├── README_EN.md                English documentation
 ├── ROADMAP_2_0_IT.md            visione, fasi e backlog V2
 ├── ROADMAP_2_0_EN.md            V2 vision, phases, and backlog
+├── HOTFIX_1_0_1_IT.md           correzioni e checklist della Build 1.0.1
+├── HOTFIX_1_0_1_EN.md           Build 1.0.1 fixes and verification checklist
 ├── PLAYTEST_2026_09_06_IT.md    piano, checklist ed esiti della prova a 7
 └── PLAYTEST_2026_09_06_EN.md    seven-person playtest plan and results
 ```
