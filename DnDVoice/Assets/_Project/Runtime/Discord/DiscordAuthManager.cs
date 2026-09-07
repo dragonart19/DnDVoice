@@ -127,8 +127,23 @@ namespace DndProximityVoice.Discord
 
         private void OnClientStatusChanged(Client.Status status, Client.Error error, int errorDetail)
         {
+            Debug.Log(
+                $"Discord client: stato {status}, errore {error}, dettaglio {errorDetail}, " +
+                $"tempo {Time.realtimeSinceStartup:0.0}s.");
+
             if (error != Client.Error.None)
             {
+                if (status == Client.Status.Reconnecting ||
+                    status == Client.Status.Connecting ||
+                    status == Client.Status.HttpWait)
+                {
+                    ErrorMessage =
+                        $"Discord sta tentando di riconnettersi ({error}, codice {errorDetail}).";
+                    Debug.LogWarning(ErrorMessage);
+                    SetState(DiscordAuthState.Connecting);
+                    return;
+                }
+
                 Fail($"Connessione Discord interrotta ({error}, codice {errorDetail}).");
                 return;
             }
@@ -137,6 +152,7 @@ namespace DndProximityVoice.Discord
             {
                 case Client.Status.Ready:
                     CaptureCurrentUser();
+                    ErrorMessage = string.Empty;
                     SetState(DiscordAuthState.Connected);
                     break;
                 case Client.Status.Connecting:

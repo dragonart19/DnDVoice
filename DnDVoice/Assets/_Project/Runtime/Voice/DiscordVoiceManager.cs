@@ -33,6 +33,9 @@ namespace DndProximityVoice.Voice
         private long receivedSampleCount;
         private bool spatialPositionsDirty = true;
         private AnimationCurve directAttenuationCurve;
+        private bool voiceRequested;
+        private int automaticRestartAttempts;
+        private float restartVoiceAt = -1f;
 
         public event Action<DiscordVoiceState> StateChanged;
 
@@ -129,11 +132,32 @@ namespace DndProximityVoice.Voice
                 return;
             }
 
+            voiceRequested = true;
+            automaticRestartAttempts = 0;
+            restartVoiceAt = -1f;
+            BeginVoiceCall(false);
+        }
+
+        private void BeginVoiceCall(bool automaticRestart)
+        {
+            if (!voiceRequested || call != null || authManager?.Client == null ||
+                authManager.State != DiscordAuthState.Connected ||
+                sessionManager?.State != DiscordSessionState.Joined || sessionManager.LobbyId == 0)
+            {
+                return;
+            }
+
             ErrorMessage = string.Empty;
-            ResetAudioCounters();
+            if (!automaticRestart)
+            {
+                ResetAudioCounters();
+            }
+
             activeLobbyId = sessionManager.LobbyId;
             spatialPositionsDirty = true;
-            SetState(DiscordVoiceState.Starting);
+            SetState(automaticRestart
+                ? DiscordVoiceState.Reconnecting
+                : DiscordVoiceState.Starting);
 
             try
             {
@@ -144,7 +168,8 @@ namespace DndProximityVoice.Voice
 
                 if (call == null)
                 {
-                    Fail("La chiamata vocale risulta già aperta. Esci e rientra nella sessione.");
+                    ScheduleVoiceRestart(
+                        "Discord non ha ancora liberato la chiamata precedente.");
                     return;
                 }
 
@@ -157,15 +182,26 @@ namespace DndProximityVoice.Voice
             }
             catch (Exception exception)
             {
-                Fail("Non è stato possibile avviare la voce Discord.", exception);
+                ScheduleVoiceRestart(
+                    "Non è stato possibile avviare la voce Discord.",
+                    exception);
             }
         }
 
         public void StopVoice()
         {
+            voiceRequested = false;
+            automaticRestartAttempts = 0;
+            restartVoiceAt = -1f;
             if (call == null || authManager?.Client == null || activeLobbyId == 0 ||
                 State == DiscordVoiceState.Stopping)
             {
+                if (call == null && sessionManager?.State == DiscordSessionState.Joined)
+                {
+                    ErrorMessage = string.Empty;
+                    SetState(DiscordVoiceState.Ready);
+                }
+
                 return;
             }
 
@@ -211,6 +247,7 @@ namespace DndProximityVoice.Voice
         private void Update()
         {
             ApplyRemoteSpatialPositionsIfNeeded();
+            RestartVoiceIfDue();
         }
 
         private void OnPlayersChanged()
@@ -354,7 +391,16 @@ namespace DndProximityVoice.Voice
         {
             if (error != Call.Error.None)
             {
-                Fail($"Errore della chiamata Discord: {error} ({errorDetail}).");
+                var message = $"Errore della chiamata Discord: {error} ({errorDetail}).";
+                if (error == Call.Error.Forbidden)
+                {
+                    Fail(message);
+                }
+                else
+                {
+                    ScheduleVoiceRestart(message);
+                }
+
                 return;
             }
 
@@ -366,7 +412,12 @@ namespace DndProximityVoice.Voice
                     SetState(DiscordVoiceState.Starting);
                     break;
                 case Call.Status.Connected:
+                    automaticRestartAttempts = 0;
+                    restartVoiceAt = -1f;
+                    ErrorMessage = string.Empty;
                     SetState(DiscordVoiceState.Connected);
+                    Debug.Log(
+                        $"Voce Discord collegata a {Time.realtimeSinceStartup:0.0}s dall'avvio.");
                     VoiceParticipantsChanged?.Invoke();
                     break;
                 case Call.Status.Reconnecting:
@@ -378,8 +429,7 @@ namespace DndProximityVoice.Voice
                 case Call.Status.Disconnected:
                     if (State != DiscordVoiceState.Stopping)
                     {
-                        DisposeCall();
-                        Fail("La chiamata vocale Discord si è disconnessa.");
+                        ScheduleVoiceRestart("La chiamata vocale Discord si è disconnessa.");
                     }
                     break;
             }
@@ -456,6 +506,9 @@ namespace DndProximityVoice.Voice
                 return;
             }
 
+            voiceRequested = false;
+            automaticRestartAttempts = 0;
+            restartVoiceAt = -1f;
             if (call != null && State != DiscordVoiceState.Stopping)
             {
                 StopVoice();
@@ -483,6 +536,86 @@ namespace DndProximityVoice.Voice
             }
         }
 
+        private void RestartVoiceIfDue()
+        {
+            if (restartVoiceAt < 0f || Time.realtimeSinceStartup < restartVoiceAt)
+            {
+                return;
+            }
+
+            if (!voiceRequested || sessionManager?.State != DiscordSessionState.Joined)
+            {
+                restartVoiceAt = -1f;
+                return;
+            }
+
+            if (authManager?.State != DiscordAuthState.Connected)
+            {
+                return;
+            }
+
+            restartVoiceAt = -1f;
+            BeginVoiceCall(true);
+        }
+
+        private void ScheduleVoiceRestart(string message, Exception exception = null)
+        {
+            CloseCallBeforeRestart();
+            if (!VoiceReconnectPolicy.CanSchedule(
+                    voiceRequested,
+                    sessionManager?.State ?? DiscordSessionState.WaitingForDiscord,
+                    automaticRestartAttempts))
+            {
+                Fail(
+                    automaticRestartAttempts >= VoiceReconnectPolicy.MaximumAttempts
+                        ? $"{message} Riconnessione automatica non riuscita dopo " +
+                          $"{VoiceReconnectPolicy.MaximumAttempts} tentativi."
+                        : message,
+                    exception);
+                return;
+            }
+
+            automaticRestartAttempts++;
+            var delay = VoiceReconnectPolicy.GetDelaySeconds(automaticRestartAttempts);
+            restartVoiceAt = Time.realtimeSinceStartup + delay;
+            ErrorMessage =
+                $"Voce in riconnessione: tentativo {automaticRestartAttempts}/" +
+                $"{VoiceReconnectPolicy.MaximumAttempts}.";
+            if (exception == null)
+            {
+                Debug.LogWarning(
+                    $"{message} {ErrorMessage} Tra {delay:0}s; tempo " +
+                    $"{Time.realtimeSinceStartup:0.0}s.");
+            }
+            else
+            {
+                Debug.LogWarning(
+                    $"{message} {ErrorMessage} Tra {delay:0}s; tempo " +
+                    $"{Time.realtimeSinceStartup:0.0}s.\n{exception}");
+            }
+
+            SetState(DiscordVoiceState.Reconnecting);
+        }
+
+        private void CloseCallBeforeRestart()
+        {
+            var lobbyToClose = activeLobbyId;
+            DisposeCall();
+            if (lobbyToClose == 0 || authManager?.Client == null)
+            {
+                return;
+            }
+
+            try
+            {
+                authManager.Client.EndCall(lobbyToClose, () => { });
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning($"Pulizia della chiamata Discord non riuscita: {exception.Message}");
+            }
+        }
+
         private void DisposeCall()
         {
             call?.Dispose();
@@ -501,6 +634,9 @@ namespace DndProximityVoice.Voice
 
         private void Fail(string message, Exception exception = null)
         {
+            voiceRequested = false;
+            automaticRestartAttempts = 0;
+            restartVoiceAt = -1f;
             var lobbyToClose = activeLobbyId;
             DisposeCall();
             if (lobbyToClose != 0 && authManager?.Client != null)

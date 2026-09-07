@@ -453,12 +453,27 @@ namespace DndProximityVoice.Session
                 {
                     SetState(DiscordSessionState.Ready);
                 }
+                else if (State == DiscordSessionState.Joined)
+                {
+                    RefreshMembers();
+                    Debug.Log(
+                        "Discord riconnesso: sessione attiva conservata " +
+                        $"a {Time.realtimeSinceStartup:0.0}s dall'avvio.");
+                }
+
+                return;
             }
-            else
+
+            if (SessionRecoveryPolicy.ShouldPreserveJoinedSession(authState, State, LobbyId))
             {
-                ResetSessionData();
-                SetState(DiscordSessionState.WaitingForDiscord);
+                Debug.LogWarning(
+                    "Discord sta riconnettendo: sessione attiva e Relay conservati " +
+                    $"a {Time.realtimeSinceStartup:0.0}s dall'avvio.");
+                return;
             }
+
+            ResetSessionData();
+            SetState(DiscordSessionState.WaitingForDiscord);
         }
 
         private void ResetSessionData()

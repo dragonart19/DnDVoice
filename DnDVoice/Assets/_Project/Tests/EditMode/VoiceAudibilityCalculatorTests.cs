@@ -139,12 +139,14 @@ namespace DndProximityVoice.Tests.EditMode
 
             var thinOcclusion = TacticalMapManager.CalculateOcclusion(thin, listener, speaker);
             var thickOcclusion = TacticalMapManager.CalculateOcclusion(thick, listener, speaker);
+            var thinGain = VoiceAudioSource.CalculateWallGain(thinOcclusion);
+            var thickGain = VoiceAudioSource.CalculateWallGain(thickOcclusion);
 
             Assert.That(thinOcclusion, Is.GreaterThan(0f));
             Assert.That(thickOcclusion, Is.GreaterThan(thinOcclusion));
-            Assert.That(
-                VoiceAudioSource.CalculateWallGain(thickOcclusion),
-                Is.LessThan(VoiceAudioSource.CalculateWallGain(thinOcclusion)));
+            Assert.That(thinGain, Is.GreaterThan(0.6f));
+            Assert.That(thickGain, Is.LessThanOrEqualTo(0.021f));
+            Assert.That(thickGain, Is.LessThan(thinGain * 0.05f));
         }
 
         [Test]

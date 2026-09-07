@@ -10,7 +10,7 @@ namespace DndProximityVoice.Editor
 {
     public static class WindowsReleaseBuild
     {
-        private const string MenuPath = "D&D Proximity Voice/Build Windows 1.0";
+        private const string MenuPath = "D&D Proximity Voice/Build Windows 1.0.1 Hotfix";
         private const string ExecutableName = "DnD Proximity Voice.exe";
 
         [MenuItem(MenuPath, priority = 10)]
@@ -32,7 +32,7 @@ namespace DndProximityVoice.Editor
                     return;
                 }
 
-                var buildName = "DnDProximityVoice-Windows-BUILD-1.0";
+                var buildName = "DnDProximityVoice-Windows-BUILD-1.0.1-HOTFIX";
                 var projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
                 var buildsRoot = Path.Combine(projectRoot, "Builds");
                 var buildDirectory = Path.Combine(buildsRoot, buildName);
@@ -63,7 +63,7 @@ namespace DndProximityVoice.Editor
                 CreateZip(buildDirectory, zipPath);
 
                 Debug.Log(
-                    $"Build Windows 1.0 completata: {zipPath} " +
+                    $"Build Windows 1.0.1 Hotfix completata: {zipPath} " +
                     $"({report.summary.totalSize / (1024f * 1024f):0.0} MB non compressi).");
                 EditorUtility.RevealInFinder(zipPath);
                 EditorUtility.DisplayDialog(
@@ -93,8 +93,8 @@ namespace DndProximityVoice.Editor
         private static void WriteReleaseInstructions(string buildDirectory)
         {
             const string instructions =
-                "D&D PROXIMITY VOICE - BUILD 1.0\r\n" +
-                "=================================\r\n\r\n" +
+                "D&D PROXIMITY VOICE - BUILD 1.0.1 HOTFIX\r\n" +
+                "========================================\r\n\r\n" +
                 "1. Estrai completamente il file ZIP in una cartella.\r\n" +
                 "2. Avvia 'DnD Proximity Voice.exe'.\r\n" +
                 "3. Se Windows SmartScreen compare, usa 'Ulteriori informazioni' e poi " +

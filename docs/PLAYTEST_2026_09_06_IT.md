@@ -12,7 +12,34 @@ totale, DM compreso.** Priorità: completare una sessione sulla base 2D Build
 
 Il piano è stato preparato il 5 settembre. Una verifica automatica non
 certifica la qualità della chiamata: serve una prova con i sette partecipanti
-reali. L'esito della sessione è ancora da verificare.
+reali.
+
+## Esito registrato il 7 settembre
+
+Il gruppo ha svolto la sessione con sette partecipanti e il riscontro sul
+prodotto è stato molto positivo. Il candidato `rc1` non è però diventato la
+build della partita: nei controlli immediatamente precedenti sono emersi due
+problemi bloccanti e il DM ha scelto correttamente la build di fallback già
+disponibile su GitHub.
+
+- un muro molto spesso lasciava passare una voce ancora troppo comprensibile;
+- dopo un intervallo non annotato si è verificata una disconnessione, che ha
+  coinvolto anche il DM secondo il resoconto della sessione;
+- il `Player.log` locale del candidato registra, nell'ordine disponibile,
+  `JoinTimeout` della chiamata Discord, disconnessione della mappa Relay e lobby
+  Discord non più disponibile; le righe non hanno un orario assoluto, quindi il
+  log non dimostra da solo durata e causa comune;
+- la build di fallback ha permesso di completare la partita, ma nome, commit e
+  hash del pacchetto effettivamente distribuito non sono stati registrati e non
+  vanno dedotti retroattivamente.
+
+Il follow-up viene sviluppato da `main` sul branch
+`hotfix/1.0-playtest-audio-stability` come **Build 1.0.1 Hotfix**. Comprende
+occlusione più forte per i muri spessi, conservazione di lobby/Relay durante le
+brevi riconnessioni Discord, tre tentativi automatici e limitati della chiamata
+vocale e messaggi diagnostici con il tempo trascorso dall'avvio. La V2 resta
+separata su `develop/v2`. Il 7 settembre l'utente ha confermato la checklist
+A–D dell'hotfix; resta da integrarlo in `main` e poi riallineare `develop/v2`.
 
 ## Base esaminata
 
@@ -169,15 +196,16 @@ del prodotto. Nell'esecuzione locale Unity ha risolto la cartella come
 `%USERPROFILE%/AppData/LocalLow/DnD Proximity Voice/D_D Proximity Voice`;
 `SavedMaps` si trova al suo interno.
 
-| Verifica | Esito al 5 settembre |
+| Verifica | Esito aggiornato al 7 settembre |
 | --- | --- |
 | Repository e sorgenti della base individuati | Completato, base `e81c288` più modifiche locali del candidato |
-| Limite effettivo per il gruppo di 7 | Verificato nel codice: massimo 8; carico reale da provare |
-| Test EditMode del candidato | **47/47 superati**, 0 falliti, 0 saltati; 5 settembre, 17:22 Europe/Rome |
+| Limite effettivo per il gruppo di 7 | Sette persone hanno completato la partita usando la build di fallback |
+| Test EditMode del candidato `rc1` | **47/47 superati**, 0 falliti, 0 saltati; 5 settembre, 17:22 Europe/Rome |
 | Nuova build Windows del candidato | Compilata e avviata localmente; ZIP e SHA-256 registrati; secondo PC da provare |
 | Copia codice, utilità e blocco input menu | Implementati; test automatici e controllo visivo locale completati |
-| Prova reale a sette e continuità vocale | Da eseguire |
-| Commit e push di questa preparazione | A cura dell'utente; modifiche ancora locali |
+| Prova reale a sette e continuità vocale | Partita completata con fallback; `rc1` respinto nel controllo iniziale per occlusione e disconnessioni |
+| Commit e push della preparazione `rc1` | Completati dall'utente su `main`, commit `6d2304a` |
+| Build 1.0.1 Hotfix | Commit `9ba9a1c` pubblicato sul branch hotfix; checklist A–D confermata dall'utente; suite rieseguita il 7 settembre alle 13:16 UTC: **53/53 test EditMode**, zero falliti o saltati; integrazione in `main` da completare |
 
 La verifica è stata eseguita con Unity `6000.3.8f1` in modalità batch EditMode;
 Unity ha terminato con codice `0`, senza errori di compilazione. Il report
@@ -196,6 +224,11 @@ locale più recente è
 | RemotePcmDiagnosticTests | 1 |
 | RemotePcmStreamTests | 1 |
 | MapMenuInputTests | 5 |
+
+La Build 1.0.1 aggiunge sei casi `RecoveryPolicyTests`; il totale passa da 47 a
+53. Il 7 settembre alle 13:16 UTC la suite batch su Unity `6000.3.8f1` ha
+superato **53/53** test, zero falliti e zero saltati. Il report locale è
+`DnDVoice/Logs/hotfix-1.0.1-editmode-results.xml`, escluso da Git.
 
 I nove test delle quattro suite PCM verificano componenti locali, anche del
 percorso sperimentale precedente: non misurano qualità o latenza della chiamata
