@@ -39,7 +39,8 @@ occlusione più forte per i muri spessi, conservazione di lobby/Relay durante le
 brevi riconnessioni Discord, tre tentativi automatici e limitati della chiamata
 vocale e messaggi diagnostici con il tempo trascorso dall'avvio. La V2 resta
 separata su `develop/v2`. Il 7 settembre l'utente ha confermato la checklist
-A–D dell'hotfix; resta da integrarlo in `main` e poi riallineare `develop/v2`.
+A–D dell'hotfix; il merge in `main` è stato completato con `77a9bf4` e la base
+è stata successivamente riallineata su `develop/v2`.
 
 ## Base esaminata
 
@@ -205,7 +206,7 @@ del prodotto. Nell'esecuzione locale Unity ha risolto la cartella come
 | Copia codice, utilità e blocco input menu | Implementati; test automatici e controllo visivo locale completati |
 | Prova reale a sette e continuità vocale | Partita completata con fallback; `rc1` respinto nel controllo iniziale per occlusione e disconnessioni |
 | Commit e push della preparazione `rc1` | Completati dall'utente su `main`, commit `6d2304a` |
-| Build 1.0.1 Hotfix | Commit `9ba9a1c` pubblicato sul branch hotfix; checklist A–D confermata dall'utente; suite rieseguita il 7 settembre alle 13:16 UTC: **53/53 test EditMode**, zero falliti o saltati; integrazione in `main` da completare |
+| Build 1.0.1 Hotfix | Commit `9ba9a1c` pubblicato sul branch hotfix; checklist A–D confermata; **53/53 test EditMode** sulla hotfix; merge in `main` completato con `77a9bf4`; integrazione V2 verificata con **57/57** |
 
 La verifica è stata eseguita con Unity `6000.3.8f1` in modalità batch EditMode;
 Unity ha terminato con codice `0`, senza errori di compilazione. Il report

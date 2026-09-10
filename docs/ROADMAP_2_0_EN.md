@@ -11,6 +11,13 @@ acceptance criteria, and results are in the [playtest plan](PLAYTEST_2026_09_06_
 The V2 P0 priorities below belong to the following phase; they are not promises
 to deliver before Sunday. The user performs commits and pushes.
 
+## Active development
+
+[Issue #3](https://github.com/dragonart19/DnDVoice/issues/3) separates Build 1.0.1,
+2D Tabletop, and 3D World Builder on `feature/3-mode-boundaries`. Its boundaries,
+acceptance criteria, and user-run tests are documented in
+[Mode architecture](ARCHITECTURE_MODES_EN.md).
+
 ## Goal
 
 Version 2.0 evolves D&D Proximity Voice from a 2D voice companion into a hybrid
@@ -20,7 +27,7 @@ that scene by choosing the character or location from which they speak.
 
 > **Product promise:** Build the scene. Become every voice.
 
-Build 1.0 remains the stable, playable foundation. New capabilities are built
+Build 1.0.1 remains the stable, playable foundation. New capabilities are built
 as separate modules and integrated only after tests with two or more clients.
 
 ## Decisions already made
@@ -154,7 +161,7 @@ platform does not move forward.
 
 | Phase | Outcome | Exit criterion |
 | --- | --- | --- |
-| Foundations | V2 boundaries, data, and pipeline | Build 1.0 remains stable and formats are documented |
+| Foundations | V2 boundaries, data, and pipeline | Build 1.0.1 remains stable and formats are documented |
 | 3D vertical slice | complete playable tavern | two-client session with no critical blocker |
 | Closed alpha | campaigns, import, and recovery | external testers finish a session without assistance |
 | Commercial MVP | DM Edition + Player Client | distributable build with verified licenses and privacy |
@@ -164,7 +171,7 @@ platform does not move forward.
 
 ### P0 — essential
 
-- define boundaries between Build 1.0, 2D mode, and 3D mode;
+- define boundaries between Build 1.0.1, 2D mode, and 3D mode;
 - design versioned campaign and 3D scene data;
 - implement 3D camera, selection, and transform tools;
 - build the modular 3D room editor;
@@ -210,10 +217,21 @@ platform does not move forward.
 
 - Every task lives on GitHub with priority, area, milestone, and acceptance
   criteria.
-- Use one task per branch and keep changes small and verifiable.
+- `main` remains the stable Build 1.x line. V2 development is integrated into
+  `develop/v2`, created from `main` at commit `6d2304a`.
+- Each selected Kanban card is first converted from a draft into a repository
+  issue, then developed in a `feature/<number>-<short-name>` branch created
+  from `develop/v2`. Use one issue per branch and keep changes small and
+  verifiable.
+- The user runs the tests and reports their outcome. Codex provides a checklist
+  and the required commands with each delivery, but does not run suites or
+  builds unless the user explicitly requests it.
+- Close an issue only after its acceptance criteria are met, documentation is
+  current, the user has confirmed the tests, and the change is integrated into
+  `develop/v2`. Moving a card to `Done` does not replace closing its linked issue.
 - Networking and voice changes always require at least two real clients.
 - No asset enters the project without recorded origin and license.
-- New work must not break Build 1.0.
+- New work must not break Build 1.0.1.
 - Validate the DM experience before expanding the platform.
 
 ## Intentionally outside the MVP

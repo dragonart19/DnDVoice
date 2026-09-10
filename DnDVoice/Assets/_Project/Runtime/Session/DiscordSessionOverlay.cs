@@ -1,3 +1,4 @@
+using DndProximityVoice.Core;
 using DndProximityVoice.Discord;
 using DndProximityVoice.UI;
 using UnityEngine;
@@ -13,18 +14,21 @@ namespace DndProximityVoice.Session
         private const float PanelHeight = 590f;
 
         private DiscordAuthManager authManager;
+        private ProductModeManager productModeManager;
         private DiscordSessionManager sessionManager;
         private string joinCode = string.Empty;
 
         private void Awake()
         {
             authManager = GetComponent<DiscordAuthManager>();
+            productModeManager = GetComponent<ProductModeManager>();
             sessionManager = GetComponent<DiscordSessionManager>();
         }
 
         private void OnGUI()
         {
             if (authManager?.State != DiscordAuthState.Connected ||
+                productModeManager?.CurrentMode != ProductMode.Tabletop2D ||
                 sessionManager == null ||
                 sessionManager.State == DiscordSessionState.Joined)
             {
@@ -32,6 +36,7 @@ namespace DndProximityVoice.Session
             }
 
             var previousMatrix = GUI.matrix;
+            AppUiControls.BeginSurface();
             AppUiTheme.BeginResponsive(ReferenceWidth, ReferenceHeight, out var viewport);
             AppUiTheme.DrawBackdrop(viewport);
             DrawTopBrand(viewport);
@@ -63,6 +68,7 @@ namespace DndProximityVoice.Session
                     break;
             }
 
+            AppUiControls.EndSurface(viewport);
             GUI.matrix = previousMatrix;
         }
 
@@ -78,6 +84,15 @@ namespace DndProximityVoice.Session
                 AppUiTheme.Body);
 
             DrawDiscordBadge(new Rect(panel.xMax - 286f, panel.y + 44f, 238f, 40f));
+            if (GUI.Button(
+                    new Rect(panel.xMax - 286f, panel.y + 90f, 238f, 28f),
+                    "←  CAMBIA MODALITÀ",
+                    AppUiTheme.SecondaryButton))
+            {
+                joinCode = string.Empty;
+                productModeManager.ClearSelection();
+            }
+
             AppUiTheme.DrawDivider(new Rect(panel.x + 48f, panel.y + 122f, panel.width - 96f, 1f));
 
             var optionY = panel.y + 152f;
@@ -111,7 +126,7 @@ namespace DndProximityVoice.Session
                 "✓  Codice privato di 6 caratteri\n✓  Controllo completo della mappa",
                 AppUiTheme.Caption);
 
-            if (GUI.Button(
+            if (AppUiControls.Button(
                     new Rect(rect.x + 28f, rect.yMax - 76f, rect.width - 56f, 50f),
                     "CREA SESSIONE   →",
                     AppUiTheme.PrimaryButton))
@@ -152,12 +167,22 @@ namespace DndProximityVoice.Session
                 SessionCode.IsValid(joinCode) ? AppUiTheme.Success : AppUiTheme.Muted);
 
             GUI.enabled = SessionCode.IsValid(joinCode);
-            if (GUI.Button(
+            if (AppUiControls.Button(
                     new Rect(rect.x + 28f, rect.yMax - 76f, rect.width - 56f, 50f),
                     "ENTRA NELLA SESSIONE   →",
                     AppUiTheme.PrimaryButton))
             {
                 sessionManager.JoinSession(joinCode);
+            }
+
+            var currentEvent = Event.current;
+            if (SessionCode.IsValid(joinCode) &&
+                currentEvent.type == EventType.KeyDown &&
+                (currentEvent.keyCode == KeyCode.Return || currentEvent.keyCode == KeyCode.KeypadEnter) &&
+                GUI.GetNameOfFocusedControl() == "SessionCode")
+            {
+                sessionManager.JoinSession(joinCode);
+                currentEvent.Use();
             }
 
             GUI.enabled = true;
@@ -221,7 +246,7 @@ namespace DndProximityVoice.Session
                 sessionManager.ErrorMessage,
                 AppUiTheme.BodyCentered,
                 AppUiTheme.Danger);
-            if (GUI.Button(
+            if (AppUiControls.Button(
                     new Rect(center.x - 150f, center.y + 90f, 300f, 50f),
                     "TORNA INDIETRO",
                     AppUiTheme.PrimaryButton))

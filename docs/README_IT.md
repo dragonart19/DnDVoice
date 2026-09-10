@@ -2,6 +2,8 @@
 
 [← README principale](../README.md) · [English documentation](README_EN.md) ·
 [Roadmap prodotto 2.0](ROADMAP_2_0_IT.md) ·
+[Architettura modalità](ARCHITECTURE_MODES_IT.md) ·
+[Design system UI](UI_DESIGN_SYSTEM_IT.md) ·
 [Kanban GitHub](https://github.com/users/dragonart19/projects/1/views/1)
 
 > Prova programmata: **6 settembre 2026, ore 10:30 Europe/Rome, 7 partecipanti
@@ -44,9 +46,14 @@ prima della partita. Il 7 settembre l'utente ha confermato il completamento
 della checklist A–D dell'hotfix con due client, inclusi occlusione,
 riconnessione breve e durata. La suite EditMode è stata rieseguita il 7
 settembre alle 13:16 UTC con Unity `6000.3.8f1`: **53/53 superati**, zero
-falliti o saltati e nessun errore di compilazione. L'integrazione in `main` e
-la registrazione del pacchetto distribuibile restano separate dalla
-validazione.
+falliti o saltati e nessun errore di compilazione. L'integrazione in `main` è
+stata completata nel commit `77a9bf4`; la registrazione del pacchetto
+distribuibile resta separata dalla validazione.
+
+Sul branch V2, dopo l'integrazione di `feature-luca`, la suite è stata estesa
+con le regressioni dell'autorizzazione Relay e rieseguita in una copia pulita
+del progetto: **70/70 test EditMode superati**, zero falliti o saltati, con
+compilazione runtime e test senza errori.
 
 | Area | Stato | Dettaglio |
 | --- | :---: | --- |
@@ -57,6 +64,8 @@ validazione.
 | Direzione stereo | 🟡 | Disponibile solo quando il callback offre almeno due canali PCM |
 | Mappa e pedine | ✅ | Stato autorevole del DM e interpolazione lato client |
 | Muri, porte e stanze | ✅ | Disegno, snap, spessore, stati porta e rilevamento stanze |
+| Azioni rapide DM V2 | ✅ | Toolbar a icone e menu contestuale per muri, giocatori, mute ed espulsione |
+| Identità Relay V2 | ✅ | Challenge associata all'utente Discord prima dello scambio degli snapshot |
 | Occlusione | 🟡 | Muri spessi quasi opachi; filtro passa-basso non attivo |
 | Gruppi privati | ✅ | Gruppi A/B/C applicati come regola audio locale |
 | Mappe salvate | ✅ | Persistenza JSON locale al computer |
@@ -135,8 +144,9 @@ Unity vero e proprio è la cartella interna `DnDVoice`.
 ### Creare una sessione
 
 1. Il DM avvia l'app e sceglie **Continua con Discord**.
-2. Dopo il login crea una nuova sessione.
-3. L'app genera un codice di 6 caratteri evitando simboli ambigui.
+2. Dopo il login sceglie **Tavolo 2D**.
+3. Crea una nuova sessione.
+4. L'app genera un codice di 6 caratteri evitando simboli ambigui.
 4. Il DM condivide solo quel codice con il proprio gruppo.
 5. Quando gli altri entrano, le pedine compaiono nella mappa condivisa.
 
@@ -149,7 +159,8 @@ Unity vero e proprio è la cartella interna `DnDVoice`.
 
 Il codice individua la lobby Discord; un segreto deterministico viene derivato
 dal codice. La lobby pubblica metadati di applicazione, codice, host e versione
-del protocollo. Il protocollo attuale è la versione `6`.
+del protocollo. Sul branch V2 il protocollo attuale è la versione `7`; tutti i
+partecipanti devono quindi usare una build generata dallo stesso branch e commit.
 
 Se il DM esce, viene meno l'autorità della mappa e la sessione non offre ancora
 una migrazione automatica dell'host.
@@ -161,6 +172,8 @@ una migrazione automatica dell'host.
 | Sussurro | `1` |
 | Voce normale | `2` |
 | Urlo | `3` |
+| Push-to-talk | Tieni premuto `V` quando attivo |
+| Conferma codice sessione | `Invio` nel campo codice |
 | Zoom mappa | `Ctrl + rotellina` |
 | Scorrimento verticale | Rotellina |
 | Scorrimento orizzontale | `Shift + rotellina` |
@@ -173,6 +186,13 @@ Il menu burger in alto a sinistra contiene gli strumenti di costruzione e il
 pannello richiudibile dei giocatori connessi, così la mappa resta libera. I
 pannelli intercettano i clic: un comando UI non deve muovere una pedina o
 disegnare un muro sottostante.
+
+Il pannello **Impostazioni audio** consente di scegliere microfono e uscita,
+regolare i volumi, usare una soglia voce automatica o manuale, disattivare
+l'ascolto e attivare il push-to-talk. Il pannello giocatori ordina prima
+l'utente locale, chi sta parlando e gli utenti connessi; parlato e udibilità
+sono comunicati anche con testo, simboli e barre segmentate. Palette, spacing,
+stati e checklist sono descritti nel [design system UI](UI_DESIGN_SYSTEM_IT.md).
 
 ### Copiare il codice e aprire i file locali
 
@@ -207,6 +227,21 @@ Selezionando una pedina viene mostrato il suo raggio vocale.
 Il DM è autorevole per lo stato della mappa e per lo spostamento delle pedine.
 I client ricevono snapshot tramite Relay e interpolano la posizione verso il
 bersaglio, riducendo gli scatti visivi.
+
+### Toolbar e azioni rapide V2
+
+La toolbar sopra la mappa raccoglie selezione, muri, porte, chiusura stanza,
+eliminazione e zoom. Selezionando un muro compare un menu vicino all'elemento
+con **Sposta**, **Ruota**, **Elimina** e, per le porte, cambio di stato.
+Selezionando la pedina di un altro partecipante, il DM può disattivarne il
+microfono per tutta la stanza oppure richiedere l'espulsione. Le azioni
+distruttive mostrano una conferma e i popup consumano gli eventi del mouse, così
+il clic non attraversa l'interfaccia e non modifica accidentalmente la mappa.
+
+Il mute imposto dal DM viene sincronizzato nello snapshot autorevole. Il client
+mutato conserva la propria preferenza locale: quando il DM lo riattiva torna
+allo stato mute/push-to-talk scelto dall'utente, senza poter aggirare il blocco
+mentre è attivo.
 
 ## 9. Muri, porte e stanze
 
@@ -337,6 +372,9 @@ Dettagli attuali:
 - snapshot affidabile ogni 2 secondi e all'ingresso di un nuovo client;
 - pacchetti frequenti non affidabili per contenere latenza e traffico;
 - snapshot periodici affidabili per riallineare lo stato;
+- revisione crescente e validazione completa prima di applicare uno snapshot;
+- challenge Relay confermata dall'identità Discord prima di autorizzare il peer;
+- nessuno snapshot viene inviato a un peer non ancora autenticato;
 - interpolazione visiva sul client;
 - host autorevole;
 - Relay configurato per 7 connessioni oltre all'host: 8 partecipanti totali.
@@ -385,6 +423,8 @@ Assets/_Project/Runtime/
 Responsabilità principali:
 
 - `DiscordAuthManager`: inizializzazione SDK e login PKCE;
+- `ProductModeManager`: selezione centrale tra Tavolo 2D e futuro World Builder 3D;
+- `ProductModeOverlay`: scelta modalità, con 3D visibile ma disabilitato;
 - `DiscordSessionManager`: lobby, codice sessione e membership;
 - `PositionSyncManager`: Relay e snapshot autorevoli;
 - `PlayerManager`: stato dei partecipanti e movimento interpolato;
@@ -393,25 +433,38 @@ Responsabilità principali:
 - `DiscordVoiceManager`: chiamata, volumi per utente e regole acustiche;
 - `VoiceRangeCalculator`: curva di distanza e portata.
 
+I confini e i test di accettazione sono descritti nel documento
+[Architettura delle modalità](ARCHITECTURE_MODES_IT.md).
+
 Le classi `PcmRingBuffer`, `RemotePcmStream` e `VoiceAudioSource` restano nel
 progetto come base sperimentale e per i test del vecchio percorso PCM. Non sono
 la coda di riproduzione principale della modalità Discord Direct.
 
 ## 15. Build Windows
 
-Dal menu Unity usa:
+Il comando dipende dal branch. Su `main` usa:
 
 ```text
 D&D Proximity Voice > Build Windows 1.0.1 Hotfix
 ```
 
-Lo script crea una build release x64 nella cartella:
+che crea la build stabile in:
 
 ```text
 Builds/DnDProximityVoice-Windows-BUILD-1.0.1-HOTFIX
 ```
 
-e prepara anche un archivio ZIP condivisibile. Distribuire l'intera cartella o
+Su `develop/v2` e sui branch `feature/*` usa invece:
+
+```text
+D&D Proximity Voice > Build Windows V2 Preview
+```
+
+Il pacchetto risultante usa il nome
+`Builds/DnDProximityVoice-Windows-V2-PREVIEW` e non deve essere distribuito
+come Build 1.0.
+
+Lo script prepara anche un archivio ZIP condivisibile. Distribuire l'intera cartella o
 lo ZIP, non soltanto il file `.exe`, perché Unity necessita della cartella
 `*_Data` e delle librerie associate.
 
@@ -503,11 +556,10 @@ un'area da validare e migliorare.
 - massimo pratico corrente: 8 partecipanti totali;
 - niente migrazione host automatica;
 - tre tentativi automatici della voce e conservazione della sessione durante
-  brevi riconnessioni Discord; recupero completo e cambio dispositivo restano incompleti;
+  brevi riconnessioni Discord; il recupero dopo interruzioni prolungate resta incompleto;
 - pan stereo dipendente dal formato PCM disponibile;
 - nessun filtro passa-basso/reverb nel percorso Discord Direct;
-- nessuna selezione di microfono e uscita dentro l'app;
-- nessun controllo volume master o per singolo utente nell'interfaccia;
+- nessun test livello microfono o volume per singolo utente;
 - salvataggi solo locali;
 - niente avatar Discord completi: la visuale usa soprattutto iniziali e colori;
 - interfaccia testuale principalmente italiana;
@@ -528,9 +580,8 @@ un'area da validare e migliorare.
 
 ### Priorità 2 — controlli audio
 
-- scelta del microfono e del dispositivo di uscita;
 - test microfono e indicatore di livello;
-- volume master, volume per giocatore e mute manuale;
+- volume per singolo giocatore e diagnostica del mute imposto dal DM;
 - intensità audio spaziale configurabile;
 - filtro passa-basso attraverso muri e porte;
 - profili anti-eco e diagnostica del doppio ascolto;
@@ -540,9 +591,9 @@ un'area da validare e migliorare.
 
 - selezione multipla e movimento di gruppo;
 - teletrasporto e blocco pedine;
-- mute/isola per singolo giocatore;
+- isolamento temporaneo e controlli di moderazione più granulari;
 - editor più ricco per porte, nomi stanza e proprietà acustiche;
-- visualizzazione “chi sente chi” con indicatori chiari verde/giallo/rosso;
+- vista globale “chi sente chi” per il DM;
 - annulla/ripristina e cronologia delle modifiche;
 - import/export delle mappe.
 
@@ -557,9 +608,9 @@ un'area da validare e migliorare.
 
 ### Priorità 5 — esperienza e pubblicazione
 
-- avatar Discord, animazione di chi parla e transizioni UI;
-- tooltip, onboarding e scorciatoie rimappabili;
-- scala UI, contrasto, modalità daltonismo e navigazione tastiera;
+- avatar Discord completi e transizioni tra schermate;
+- onboarding e scorciatoie rimappabili;
+- modalità daltonismo dedicata e navigazione controller completa;
 - localizzazione completa italiano/inglese;
 - build macOS/Linux dopo verifica del supporto SDK;
 - installer, firma digitale, aggiornamenti e release GitHub automatizzate;

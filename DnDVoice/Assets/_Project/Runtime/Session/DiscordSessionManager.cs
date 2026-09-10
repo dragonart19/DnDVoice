@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Discord.Sdk;
+using DndProximityVoice.Core;
 using DndProximityVoice.Discord;
 using DndProximityVoice.Realtime;
 using UnityEngine;
@@ -16,13 +17,16 @@ namespace DndProximityVoice.Session
         private const string MetadataCodeKey = "session_code";
         private const string MetadataHostKey = "host_id";
         private const string MetadataProtocolKey = "protocol";
-        private const string MetadataProtocolValue = "6";
+        private const string MetadataProtocolValue = "7";
         private const float LobbyMetadataTimeoutSeconds = 10f;
         private const float LobbyMetadataRetrySeconds = 0.25f;
 
         private readonly List<SessionMemberSnapshot> members = new List<SessionMemberSnapshot>();
+        private readonly HashSet<ulong> expelledUsers = new HashSet<ulong>();
+        private HashSet<ulong> authoritativeMembers;
 
         private DiscordAuthManager authManager;
+        private ProductModeManager productModeManager;
         private PositionSyncManager positionSyncManager;
         private string pendingSessionCode = string.Empty;
         private bool pendingAsHost;
@@ -40,6 +44,8 @@ namespace DndProximityVoice.Session
 
         public string ErrorMessage { get; private set; } = string.Empty;
 
+        public string AdministrationError { get; private set; } = string.Empty;
+
         public string CurrentSessionCode { get; private set; } = string.Empty;
 
         public ulong LobbyId { get; private set; }
@@ -50,9 +56,14 @@ namespace DndProximityVoice.Session
 
         public IReadOnlyList<SessionMemberSnapshot> Members => members;
 
-        public bool CanCreateOrJoin => State == DiscordSessionState.Ready || State == DiscordSessionState.Failed;
+        public bool CanCreateOrJoin =>
+            productModeManager?.CurrentMode == ProductMode.Tabletop2D &&
+            (State == DiscordSessionState.Ready || State == DiscordSessionState.Failed);
 
-        public void Initialize(DiscordAuthManager manager, PositionSyncManager syncManager)
+        public void Initialize(
+            DiscordAuthManager manager,
+            PositionSyncManager syncManager,
+            ProductModeManager modeManager)
         {
             if (authManager != null)
             {
@@ -61,6 +72,7 @@ namespace DndProximityVoice.Session
 
             authManager = manager;
             positionSyncManager = syncManager;
+            productModeManager = modeManager;
             if (authManager == null)
             {
                 SetState(DiscordSessionState.WaitingForDiscord);
@@ -120,8 +132,82 @@ namespace DndProximityVoice.Session
                 return;
             }
 
+            if (IsHost) SendSessionControl("close", "0");
+            positionSyncManager?.StopSync();
             SetState(DiscordSessionState.Leaving);
             authManager.Client.LeaveLobby(LobbyId, OnLeaveCompleted);
+        }
+
+        public bool TryKickPlayer(ulong userId)
+        {
+            if (State != DiscordSessionState.Joined || !IsHost || userId == HostUserId || !ContainsMember(userId)) return false;
+            expelledUsers.Add(userId);
+            positionSyncManager?.DisconnectDiscordUser(userId);
+            SendSessionControl("kick", userId.ToString());
+            RefreshMembers();
+            return true;
+        }
+
+        internal bool ContainsMember(ulong userId) => !expelledUsers.Contains(userId) && members.Exists(member => member.Id == userId);
+
+        internal void ApplyAuthoritativeMembers(IReadOnlyList<ulong> userIds)
+        {
+            if (IsHost || State != DiscordSessionState.Joined) return;
+            var next = new HashSet<ulong>(userIds);
+            if (authoritativeMembers != null && authoritativeMembers.SetEquals(next)) return;
+            authoritativeMembers = next;
+            RefreshMembers();
+        }
+
+        internal void SendRelayProof(string proof) => SendSessionControl("peer", proof);
+
+        private void SendSessionControl(string action, string value)
+        {
+            if (State != DiscordSessionState.Joined || authManager?.Client == null) return;
+            var lobbyId = LobbyId;
+            AdministrationError = string.Empty;
+            authManager.Client.SendLobbyMessageWithMetadata(lobbyId, "DndVoice · aggiornamento sessione",
+                new Dictionary<string, string> { ["dnd_control"] = "7", ["action"] = action, ["value"] = value },
+                (result, messageId) =>
+                {
+                    if (LobbyId == lobbyId && !result.Successful())
+                        AdministrationError = "Discord non ha confermato l'aggiornamento della sessione. " + result.Error();
+                });
+        }
+
+        private void OnSessionMessage(ulong messageId)
+        {
+            if (State != DiscordSessionState.Joined || authManager?.Client == null) return;
+            using (var message = authManager.Client.GetMessageHandle(messageId))
+            using (var lobby = message?.Lobby())
+            {
+                if (lobby == null || lobby.Id() != LobbyId) return;
+                var data = message.Metadata();
+                if (!data.TryGetValue("dnd_control", out var version) || version != "7" ||
+                    !data.TryGetValue("action", out var action) || !data.TryGetValue("value", out var value)) return;
+                var authorId = message.AuthorId();
+                if (action == "peer" && IsHost && ContainsMember(authorId))
+                    positionSyncManager?.ConfirmDiscordPeer(authorId, value);
+                if (IsHost || authorId != HostUserId) return;
+                if (action == "close") EndSessionFromHost("Il Dungeon Master ha chiuso la stanza.");
+                if (action == "kick" && ulong.TryParse(value, out var targetId))
+                {
+                    expelledUsers.Add(targetId);
+                    if (targetId == authManager.CurrentUser?.Id) EndSessionFromHost("Sei stato espulso dalla stanza dal Dungeon Master.");
+                    else RefreshMembers();
+                }
+            }
+        }
+
+        internal void EndSessionFromHost(string reason)
+        {
+            if (State != DiscordSessionState.Joined || IsHost) return;
+            var lobbyToLeave = LobbyId;
+            SetState(DiscordSessionState.Leaving); // Stops voice before clearing its lobby.
+            ResetSessionData();
+            authManager?.Client?.LeaveLobby(lobbyToLeave, result => { });
+            ErrorMessage = reason;
+            SetState(DiscordSessionState.Failed);
         }
 
         public void DismissError()
@@ -287,15 +373,6 @@ namespace DndProximityVoice.Session
 
                 if (!hasValidApplication || !hasValidCode || !hasValidProtocol || !hasHost)
                 {
-                    if (!createdAsHost && TryInferHostFromExistingMembers(lobby, out var inferredHostId))
-                    {
-                        HostUserId = inferredHostId;
-                        Debug.LogWarning(
-                            "Discord lobby metadata was not available on the joining client. " +
-                            "The host was identified from the connected member list instead.");
-                        return true;
-                    }
-
                     validationError = createdAsHost
                         ? "Discord non ha confermato la creazione della sessione."
                         : "Sessione non trovata. Controlla il codice e riprova.";
@@ -305,26 +382,6 @@ namespace DndProximityVoice.Session
                 HostUserId = hostId;
                 return true;
             }
-        }
-
-        private bool TryInferHostFromExistingMembers(LobbyHandle lobby, out ulong inferredHostId)
-        {
-            inferredHostId = 0;
-            var localUserId = authManager?.CurrentUser?.Id ?? 0;
-            var lobbyMembers = lobby.LobbyMembers();
-            foreach (var lobbyMember in lobbyMembers)
-            {
-                using (lobbyMember)
-                {
-                    if (lobbyMember.Id() != localUserId && lobbyMember.Connected())
-                    {
-                        inferredHostId = lobbyMember.Id();
-                        return true;
-                    }
-                }
-            }
-
-            return false;
         }
 
         private void RegisterLobbyCallbacks()
@@ -339,6 +396,7 @@ namespace DndProximityVoice.Session
             authManager.Client.SetLobbyMemberRemovedCallback(OnLobbyMemberChanged);
             authManager.Client.SetLobbyMemberUpdatedCallback(OnLobbyMemberChanged);
             authManager.Client.SetLobbyUpdatedCallback(OnLobbyUpdated);
+            authManager.Client.SetMessageCreatedCallback(OnSessionMessage);
             callbacksRegistered = true;
         }
 
@@ -396,6 +454,8 @@ namespace DndProximityVoice.Session
                     using (lobbyMember)
                     {
                         var memberId = lobbyMember.Id();
+                        if (expelledUsers.Contains(memberId) ||
+                            (!IsHost && authoritativeMembers != null && !authoritativeMembers.Contains(memberId))) continue;
                         var displayName = memberId.ToString();
                         using (var user = lobbyMember.User())
                         {
@@ -488,6 +548,9 @@ namespace DndProximityVoice.Session
             lobbyMetadataDeadline = 0f;
             nextLobbyMetadataCheck = 0f;
             lobbyMetadataValidationError = string.Empty;
+            expelledUsers.Clear();
+            authoritativeMembers = null;
+            AdministrationError = string.Empty;
             members.Clear();
             MembersChanged?.Invoke();
         }

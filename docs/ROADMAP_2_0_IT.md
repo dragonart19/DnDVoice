@@ -11,6 +11,13 @@ i criteri di accettazione e gli esiti sono nel [piano della prova](PLAYTEST_2026
 Le priorità P0 della V2 qui sotto sono relative alla fase successiva: non sono
 impegni da completare prima di domenica. L'utente esegue commit e push.
 
+## Sviluppo attivo
+
+La [issue #3](https://github.com/dragonart19/DnDVoice/issues/3) separa Build 1.0.1,
+Tavolo 2D e World Builder 3D nel branch `feature/3-mode-boundaries`. I confini,
+i criteri di accettazione e i test affidati all'utente sono nel documento
+[Architettura delle modalità](ARCHITECTURE_MODES_IT.md).
+
 ## Obiettivo
 
 La versione 2.0 evolve D&D Proximity Voice da companion vocale 2D a tavolo
@@ -20,7 +27,7 @@ della scena, scegliendo da quale personaggio o punto dello spazio parlare.
 
 > **Promessa di prodotto:** Costruisci la scena. Diventa ogni voce.
 
-La Build 1.0 rimane la base stabile e giocabile. Le nuove funzioni vengono
+La Build 1.0.1 rimane la base stabile e giocabile. Le nuove funzioni vengono
 sviluppate in moduli separati e integrate soltanto dopo test a due o più client.
 
 ## Decisioni già definite
@@ -165,7 +172,7 @@ alla piattaforma community.
 
 | Fase | Risultato | Criterio di uscita |
 | --- | --- | --- |
-| Fondamenta | confini V2, dati e pipeline definiti | Build 1.0 ancora stabile e formati documentati |
+| Fondamenta | confini V2, dati e pipeline definiti | Build 1.0.1 ancora stabile e formati documentati |
 | Vertical slice 3D | taverna completa giocabile | sessione a due client senza blocchi critici |
 | Alpha chiusa | campagne, import e recovery | tester esterni completano una sessione senza assistenza |
 | MVP commerciale | DM Edition + Player Client | build distribuibile, licenze e privacy verificate |
@@ -175,7 +182,7 @@ alla piattaforma community.
 
 ### P0 — indispensabile
 
-- definire confini tecnici tra Build 1.0, modalità 2D e modalità 3D;
+- definire confini tecnici tra Build 1.0.1, modalità 2D e modalità 3D;
 - progettare dati versionati per campagne e scene 3D;
 - realizzare camera, selezione e trasformazione oggetti 3D;
 - creare il builder modulare di stanze 3D;
@@ -221,10 +228,21 @@ alla piattaforma community.
 
 - Ogni attività vive in GitHub e ha priorità, area, milestone e criterio di
   accettazione.
-- Una sola attività per branch; modifiche piccole e verificabili.
+- `main` rimane la linea stabile della Build 1.x; lo sviluppo della V2 viene
+  integrato nel branch `develop/v2`, creato da `main` al commit `6d2304a`.
+- Ogni scheda scelta dal Kanban viene prima convertita da bozza a issue della
+  repository, poi sviluppata in un branch `feature/<numero>-<nome-breve>` creato
+  da `develop/v2`. Una sola issue per branch; modifiche piccole e verificabili.
+- L'utente esegue i test e comunica l'esito. Per ogni consegna Codex fornisce
+  una checklist e i comandi necessari, ma non avvia suite o build salvo richiesta
+  esplicita dell'utente.
+- Un'issue viene chiusa soltanto dopo: criteri di accettazione soddisfatti,
+  documentazione aggiornata, test confermati dall'utente e modifica integrata
+  in `develop/v2`. Spostare una scheda in `Done` non sostituisce la chiusura
+  dell'issue collegata.
 - Le funzioni di rete o voce richiedono sempre un test con almeno due client.
 - Nessun asset entra nel progetto senza origine e licenza registrate.
-- Le nuove funzioni non devono rompere la Build 1.0.
+- Le nuove funzioni non devono rompere la Build 1.0.1.
 - Prima viene validata l'esperienza del DM, poi viene ampliata la piattaforma.
 
 ## Cose intenzionalmente escluse dall'MVP

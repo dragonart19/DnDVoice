@@ -25,17 +25,17 @@ PluginImporter:
         Exclude iOS: 1
         Exclude tvOS: 1
     Editor:
-      enabled: 0
+      enabled: 1
       settings:
         CPU: x86_64
         DefaultValueInitialized: true
         OS: AnyOS
     Win:
-      enabled: 0
+      enabled: 1
       settings:
         CPU: None
     Win64:
-      enabled: 0
+      enabled: 1
       settings:
         CPU: x86_64
   userData: 

@@ -8,20 +8,31 @@ namespace DndProximityVoice.UI
     /// </summary>
     public static class AppUiTheme
     {
-        private const float MaximumUiScale = 1.16f;
-        public static readonly Color Background = new Color32(8, 9, 9, 255);
-        public static readonly Color Surface = new Color32(20, 19, 16, 250);
-        public static readonly Color SurfaceRaised = new Color32(31, 28, 22, 252);
-        public static readonly Color SurfaceSoft = new Color32(38, 34, 27, 245);
-        public static readonly Color Stroke = new Color32(132, 100, 51, 175);
-        public static readonly Color Text = new Color32(244, 234, 211, 255);
-        public static readonly Color Muted = new Color32(181, 164, 132, 255);
-        public static readonly Color Faint = new Color32(120, 105, 78, 255);
-        public static readonly Color Accent = new Color32(166, 116, 47, 255);
-        public static readonly Color AccentBright = new Color32(225, 181, 91, 255);
-        public static readonly Color Success = new Color32(78, 184, 128, 255);
-        public static readonly Color Warning = new Color32(226, 157, 58, 255);
-        public static readonly Color Danger = new Color32(198, 78, 70, 255);
+        private const float MinimumUiScale = 0.72f;
+        private const float MaximumUiScale = 2f;
+
+        public const float SpaceXs = 4f;
+        public const float SpaceSm = 8f;
+        public const float SpaceMd = 12f;
+        public const float SpaceLg = 20f;
+        public const float SpaceXl = 32f;
+        public const float ControlHeight = 44f;
+        public const float MinimumHitTarget = 40f;
+
+        public static readonly Color Background = new Color32(7, 9, 10, 255);
+        public static readonly Color Surface = new Color32(18, 19, 18, 250);
+        public static readonly Color SurfaceRaised = new Color32(29, 28, 24, 252);
+        public static readonly Color SurfaceSoft = new Color32(38, 35, 29, 245);
+        public static readonly Color Stroke = new Color32(139, 106, 57, 185);
+        public static readonly Color Text = new Color32(247, 239, 218, 255);
+        public static readonly Color Muted = new Color32(193, 178, 148, 255);
+        public static readonly Color Faint = new Color32(126, 112, 88, 255);
+        public static readonly Color Accent = new Color32(170, 116, 43, 255);
+        public static readonly Color AccentBright = new Color32(232, 190, 99, 255);
+        public static readonly Color Success = new Color32(83, 190, 137, 255);
+        public static readonly Color Warning = new Color32(230, 164, 67, 255);
+        public static readonly Color Danger = new Color32(210, 82, 72, 255);
+        public static readonly Color Info = new Color32(103, 164, 205, 255);
 
         private static bool initialized;
         private static Texture2D backdropTexture;
@@ -77,6 +88,7 @@ namespace DndProximityVoice.UI
         public static GUIStyle IconButton { get; private set; }
         public static GUIStyle TokenLabel { get; private set; }
         public static GUIStyle TokenName { get; private set; }
+        public static GUIStyle MonoCaption { get; private set; }
 
         public static void Ensure()
         {
@@ -138,6 +150,13 @@ namespace DndProximityVoice.UI
             TokenLabel = CreateLabel(12, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter);
             TokenName = CreateLabel(12, FontStyle.Bold, Text, TextAnchor.UpperCenter);
             TokenName.clipping = TextClipping.Overflow;
+            MonoCaption = new GUIStyle(Caption)
+            {
+                fontSize = 11,
+                alignment = TextAnchor.MiddleCenter,
+                clipping = TextClipping.Clip,
+                wordWrap = false
+            };
 
             Input = new GUIStyle(GUI.skin.textField)
             {
@@ -205,6 +224,9 @@ namespace DndProximityVoice.UI
             }
 
             GUI.Box(rect, GUIContent.none, raised ? CardRaised : Card);
+            DrawRect(
+                new Rect(rect.x + 11f, rect.y + 8f, Mathf.Max(0f, rect.width - 22f), 1f),
+                new Color(AccentBright.r, AccentBright.g, AccentBright.b, raised ? 0.34f : 0.18f));
             DrawFrameCorners(rect, raised ? 0.66f : 0.34f);
         }
 
@@ -241,6 +263,60 @@ namespace DndProximityVoice.UI
             DrawLabel(rect, text, labelStyle ?? PillLabel, Color.Lerp(color, Color.white, 0.24f));
         }
 
+        public static void DrawStatusBadge(Rect rect, string symbol, string heading, string detail, Color color)
+        {
+            Ensure();
+            GUI.Box(rect, GUIContent.none, CardSoft);
+            DrawPill(new Rect(rect.x + 12f, rect.y + 12f, 34f, 34f), symbol, color, EyebrowCentered);
+            DrawLabel(new Rect(rect.x + 58f, rect.y + 8f, rect.width - 70f, 22f), heading, Heading, color);
+            GUI.Label(new Rect(rect.x + 58f, rect.y + 30f, rect.width - 70f, 22f), detail, Caption);
+        }
+
+        public static void DrawSegmentedMeter(Rect rect, float value, string label, Color color, int segments = 5)
+        {
+            Ensure();
+            value = Mathf.Clamp01(value);
+            segments = Mathf.Max(1, segments);
+            var labelWidth = Mathf.Min(88f, rect.width * 0.34f);
+            GUI.Label(new Rect(rect.x, rect.y, labelWidth, rect.height), label, CaptionSmall);
+            var meterRect = new Rect(rect.x + labelWidth, rect.y + 5f, rect.width - labelWidth, Mathf.Max(6f, rect.height - 10f));
+            const float gap = 3f;
+            var segmentWidth = Mathf.Max(2f, (meterRect.width - gap * (segments - 1)) / segments);
+            var litSegments = Mathf.CeilToInt(value * segments - 0.001f);
+            for (var index = 0; index < segments; index++)
+            {
+                DrawRect(
+                    new Rect(meterRect.x + index * (segmentWidth + gap), meterRect.y, segmentWidth, meterRect.height),
+                    index < litSegments ? color : new Color(Faint.r, Faint.g, Faint.b, 0.28f));
+            }
+        }
+
+        public static void DrawKeyHint(Rect rect, string key, string action)
+        {
+            var keyWidth = Mathf.Clamp(key.Length * 8f + 18f, 34f, 82f);
+            DrawPill(new Rect(rect.x, rect.y, keyWidth, rect.height), key, AccentBright, EyebrowSmallCentered);
+            GUI.Label(new Rect(rect.x + keyWidth + 8f, rect.y, rect.width - keyWidth - 8f, rect.height), action, CaptionSmall);
+        }
+
+        public static void DrawTooltip(Rect viewport)
+        {
+            if (string.IsNullOrEmpty(GUI.tooltip) || Event.current.type != EventType.Repaint)
+            {
+                return;
+            }
+
+            var tooltipContent = new GUIContent(GUI.tooltip);
+            var size = Caption.CalcSize(tooltipContent);
+            var width = Mathf.Clamp(size.x + 28f, 160f, 360f);
+            var height = Mathf.Max(36f, Caption.CalcHeight(tooltipContent, width - 24f) + 16f);
+            var position = Event.current.mousePosition + new Vector2(16f, 20f);
+            var rect = new Rect(position.x, position.y, width, height);
+            rect.x = Mathf.Clamp(rect.x, viewport.x + 8f, viewport.xMax - rect.width - 8f);
+            rect.y = Mathf.Clamp(rect.y, viewport.y + 8f, viewport.yMax - rect.height - 8f);
+            GUI.Box(rect, GUIContent.none, CardRaised);
+            GUI.Label(new Rect(rect.x + 12f, rect.y + 7f, rect.width - 24f, rect.height - 14f), GUI.tooltip, Caption);
+        }
+
         public static void DrawLabel(Rect rect, string text, GUIStyle style, Color color)
         {
             var previousContentColor = GUI.contentColor;
@@ -261,11 +337,35 @@ namespace DndProximityVoice.UI
         public static float BeginResponsive(float referenceWidth, float referenceHeight, out Rect viewport)
         {
             Ensure();
-            var scale = Mathf.Min(Screen.width / referenceWidth, Screen.height / referenceHeight);
-            scale = Mathf.Min(MaximumUiScale, Mathf.Max(0.55f, scale));
-            GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1f));
-            viewport = new Rect(0f, 0f, Screen.width / scale, Screen.height / scale);
+            var safeArea = Screen.safeArea;
+            if (safeArea.width <= 0f || safeArea.height <= 0f)
+            {
+                safeArea = new Rect(0f, 0f, Screen.width, Screen.height);
+            }
+
+            var scale = CalculateResponsiveScale(safeArea.width, safeArea.height, referenceWidth, referenceHeight);
+            var safeTop = Screen.height - safeArea.yMax;
+            GUI.matrix = Matrix4x4.TRS(
+                new Vector3(safeArea.x, safeTop, 0f),
+                Quaternion.identity,
+                new Vector3(scale, scale, 1f));
+            viewport = new Rect(0f, 0f, safeArea.width / scale, safeArea.height / scale);
             return scale;
+        }
+
+        public static float CalculateResponsiveScale(
+            float availableWidth,
+            float availableHeight,
+            float referenceWidth,
+            float referenceHeight)
+        {
+            if (availableWidth <= 0f || availableHeight <= 0f || referenceWidth <= 0f || referenceHeight <= 0f)
+            {
+                return 1f;
+            }
+
+            var scale = Mathf.Min(availableWidth / referenceWidth, availableHeight / referenceHeight);
+            return Mathf.Clamp(scale, MinimumUiScale, MaximumUiScale);
         }
 
         private static GUIStyle CreatePanelStyle(Texture2D background, int border)
@@ -300,7 +400,11 @@ namespace DndProximityVoice.UI
                 normal = { background = normal, textColor = Text },
                 hover = { background = hover, textColor = Color.white },
                 active = { background = active, textColor = Text },
-                focused = { background = hover, textColor = Color.white }
+                focused = { background = hover, textColor = Color.white },
+                onFocused = { background = hover, textColor = Color.white },
+                onNormal = { background = active, textColor = Text },
+                onHover = { background = hover, textColor = Color.white },
+                onActive = { background = active, textColor = Text }
             };
         }
 

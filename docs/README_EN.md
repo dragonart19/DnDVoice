@@ -2,6 +2,8 @@
 
 [← Main README](../README.md) · [Documentazione italiana](README_IT.md) ·
 [Product Roadmap 2.0](ROADMAP_2_0_EN.md) ·
+[Mode architecture](ARCHITECTURE_MODES_EN.md) ·
+[UI design system](UI_DESIGN_SYSTEM_EN.md) ·
 [GitHub Kanban](https://github.com/users/dragonart19/projects/1/views/1)
 
 > Scheduled playtest: **September 6, 2026, 10:30 Europe/Rome, seven participants
@@ -44,8 +46,13 @@ hotfix's A–D checklist was confirmed complete by the user on September 7 with
 two clients, including occlusion, short reconnection, and duration. The
 EditMode suite was rerun on September 7 at 13:16 UTC with Unity `6000.3.8f1`:
 **53/53 passed**, zero failed or skipped, with no compilation errors.
-Integration into `main` and recording the distributable package remain
-separate from that validation.
+Integration into `main` was completed by commit `77a9bf4`; recording the
+distributable package remains separate from that validation.
+
+On the V2 branch, after integrating `feature-luca`, the suite was extended with
+Relay-authorization regression coverage and rerun from a clean project copy:
+**70/70 EditMode tests passed**, zero failed or skipped, with error-free runtime
+and test compilation.
 
 | Area | Status | Details |
 | --- | :---: | --- |
@@ -56,6 +63,8 @@ separate from that validation.
 | Stereo direction | 🟡 | Available only when the callback supplies at least two PCM channels |
 | Map and tokens | ✅ | DM-authoritative state with client interpolation |
 | Walls, doors, and rooms | ✅ | Drawing, snapping, thickness, door states, and room detection |
+| V2 DM quick actions | ✅ | Icon toolbar and contextual actions for walls, players, mute, and kick |
+| V2 Relay identity | ✅ | Challenge bound to the Discord user before snapshot exchange |
 | Occlusion | 🟡 | Thick walls are nearly opaque; low-pass filtering is not active |
 | Private groups | ✅ | Groups A/B/C applied as a local application mixing rule |
 | Saved maps | ✅ | Local JSON persistence |
@@ -134,8 +143,9 @@ inner `DnDVoice` directory.
 ### Creating a session
 
 1. The DM starts the application and selects **Continue with Discord**.
-2. After login, the DM creates a session.
-3. The application generates a six-character code without ambiguous symbols.
+2. After login, the DM selects **2D Tabletop**.
+3. The DM creates a session.
+4. The application generates a six-character code without ambiguous symbols.
 4. The DM shares only this code with the party.
 5. As members join, their tokens appear on the shared map.
 
@@ -148,7 +158,8 @@ inner `DnDVoice` directory.
 
 The code identifies the Discord lobby, and a deterministic lobby secret is
 derived from it. Lobby metadata records the application, code, host, and
-protocol version. The current protocol version is `6`.
+protocol version. The V2 branch currently uses protocol version `7`; every
+participant must therefore run a build produced from the same branch and commit.
 
 If the DM leaves, map authority is lost. Automatic host migration has not been
 implemented yet.
@@ -160,6 +171,8 @@ implemented yet.
 | Whisper | `1` |
 | Normal voice | `2` |
 | Shout | `3` |
+| Push-to-talk | Hold `V` while enabled |
+| Confirm session code | `Enter` in the code field |
 | Map zoom | `Ctrl + mouse wheel` |
 | Vertical scroll | Mouse wheel |
 | Horizontal scroll | `Shift + mouse wheel` |
@@ -171,6 +184,13 @@ implemented yet.
 The top-left burger menu contains construction tools and a collapsible connected
 players list, keeping the map clear. UI panels consume pointer events so a menu
 click should not move a token or draw a wall underneath it.
+
+The **Audio settings** drawer selects input/output devices, adjusts volume,
+switches between automatic and manual voice sensitivity, deafens incoming
+audio, and enables push-to-talk. The player drawer prioritizes the local user,
+active speakers, and connected users; speaking and audibility use text,
+symbols, and segmented meters in addition to color. See the
+[UI design system](UI_DESIGN_SYSTEM_EN.md) for tokens, spacing, states, and QA.
 
 ### Copy the code and open local files
 
@@ -205,6 +225,20 @@ Selecting a token displays that character's voice radius.
 The DM is authoritative for map state and token movement. Clients receive
 snapshots through Relay and interpolate their visual position toward each
 target, reducing visible stutter.
+
+### V2 toolbar and quick actions
+
+The toolbar above the map groups selection, wall, door, close-room, delete, and
+zoom controls. Selecting a wall opens a nearby menu with **Move**, **Rotate**,
+**Delete**, and—on doors—a state action. Selecting another participant's token
+lets the DM mute that user for the entire room or request a kick. Destructive
+actions require confirmation, and popups consume pointer events so clicks cannot
+pass through the interface and accidentally edit the map.
+
+DM-enforced mute is included in the authoritative snapshot. The muted client
+keeps its local preference: when the DM restores speaking, the user's previous
+mute/push-to-talk intent is restored, while the DM block cannot be bypassed when
+it is active.
 
 ## 9. Walls, doors, and rooms
 
@@ -338,6 +372,9 @@ Current behavior:
 - a reliable snapshot is sent every two seconds and to newly joined clients;
 - frequent packets are unreliable to reduce latency and traffic;
 - periodic reliable state realigns clients;
+- snapshots carry increasing revisions and are fully validated before application;
+- a Relay challenge is confirmed through the authenticated Discord identity;
+- no snapshot is sent to a peer until that peer has been authenticated;
 - clients visually interpolate movement;
 - the host is authoritative;
 - Relay allows seven connections beyond the host: eight total participants.
@@ -385,6 +422,8 @@ Assets/_Project/Runtime/
 Main responsibilities:
 
 - `DiscordAuthManager`: SDK initialization and PKCE login;
+- `ProductModeManager`: central selection between 2D Tabletop and the future 3D World Builder;
+- `ProductModeOverlay`: mode selection, with 3D visible but disabled;
 - `DiscordSessionManager`: lobbies, session code, and membership;
 - `PositionSyncManager`: Relay and authoritative snapshots;
 - `PlayerManager`: participant state and interpolated movement;
@@ -393,25 +432,37 @@ Main responsibilities:
 - `DiscordVoiceManager`: call state, per-user volume, and acoustic rules;
 - `VoiceRangeCalculator`: distance curve and range calculation.
 
+The boundaries and acceptance tests are documented in
+[Mode architecture](ARCHITECTURE_MODES_EN.md).
+
 `PcmRingBuffer`, `RemotePcmStream`, and `VoiceAudioSource` remain as experimental
 infrastructure and tests for the previous PCM path. They are not the main
 playback queue in Discord Direct mode.
 
 ## 15. Windows build
 
-Use this Unity menu command:
+The command depends on the branch. On `main`, use:
 
 ```text
 D&D Proximity Voice > Build Windows 1.0.1 Hotfix
 ```
 
-The editor script creates an x64 release build under:
+which creates the stable build under:
 
 ```text
 Builds/DnDProximityVoice-Windows-BUILD-1.0.1-HOTFIX
 ```
 
-It also prepares a shareable ZIP archive. Distribute the full folder or ZIP,
+On `develop/v2` and `feature/*` branches, use instead:
+
+```text
+D&D Proximity Voice > Build Windows V2 Preview
+```
+
+The resulting package is named `Builds/DnDProximityVoice-Windows-V2-PREVIEW`
+and must not be distributed as Build 1.0.
+
+The script also prepares a shareable ZIP archive. Distribute the full folder or ZIP,
 not only the `.exe`, because Unity needs its `*_Data` folder and libraries.
 
 The executable is unsigned, so Windows SmartScreen can display a warning. A
@@ -502,11 +553,10 @@ and improvement.
 - practical current maximum: eight total participants;
 - no automatic host migration;
 - three automatic voice attempts and session preservation during short Discord
-  reconnects; full recovery and device changes remain incomplete;
+  reconnects; recovery after extended outages remains incomplete;
 - stereo pan depends on the available PCM format;
 - no low-pass filter or reverb in Discord Direct mode;
-- no in-app input/output device picker;
-- no master or per-user volume UI;
+- no microphone level test or per-user volume control;
 - save files are local only;
 - no complete Discord avatars; tokens primarily use initials and colors;
 - interface copy is primarily Italian;
@@ -527,9 +577,8 @@ and improvement.
 
 ### Priority 2 — audio controls
 
-- microphone and output-device selection;
 - microphone test and level meter;
-- master volume, per-player volume, and manual mute;
+- per-player volume and diagnostics for DM-enforced mute;
 - configurable spatial-audio intensity;
 - low-pass filtering through walls and doors;
 - anti-echo profiles and duplicate-listening diagnostics;
@@ -539,9 +588,9 @@ and improvement.
 
 - multi-selection and group movement;
 - teleport and token locking;
-- per-player mute/isolate controls;
+- temporary isolation and more granular moderation controls;
 - richer door, room-name, and acoustic-property editors;
-- clear green/yellow/red “who hears whom” visualization;
+- global DM “who hears whom” overview;
 - undo/redo and edit history;
 - map import/export.
 
@@ -556,9 +605,9 @@ and improvement.
 
 ### Priority 5 — experience and publishing
 
-- Discord avatars, speaking animation, and UI transitions;
-- tooltips, onboarding, and remappable shortcuts;
-- UI scaling, contrast, color-blind modes, and keyboard navigation;
+- complete Discord avatars and screen transitions;
+- onboarding and remappable shortcuts;
+- dedicated color-blind mode and complete controller navigation;
 - complete Italian/English localization;
 - macOS/Linux builds after SDK support validation;
 - installer, code signing, updates, and automated GitHub releases;

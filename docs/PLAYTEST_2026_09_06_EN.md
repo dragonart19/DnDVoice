@@ -37,8 +37,9 @@ Follow-up work starts from `main` on
 stronger thick-wall occlusion, preservation of the lobby and Relay during
 short Discord reconnections, three bounded automatic voice-call retries, and
 diagnostics with elapsed runtime. V2 remains isolated on `develop/v2`. On
-September 7, the user confirmed the hotfix A–D checklist; the remaining step
-is integration into `main`, followed by realigning `develop/v2`.
+September 7, the user confirmed the hotfix A–D checklist; the merge into
+`main` was completed by `77a9bf4`, and the foundation was then realigned on
+`develop/v2`.
 
 ## Inspected baseline
 
@@ -203,7 +204,7 @@ local run Unity resolved that directory to
 | Code copy, utilities, and menu input blocking | Implemented; automated tests and local visual check complete |
 | Real seven-person test and voice continuity | Session completed with the fallback; `rc1` was rejected during preflight because of occlusion and disconnects |
 | Commit and push of the `rc1` preparation | Completed by the user on `main`, commit `6d2304a` |
-| Build 1.0.1 Hotfix | Commit `9ba9a1c` published on the hotfix branch; A–D checklist confirmed by the user; suite rerun September 7 at 13:16 UTC: **53/53 EditMode tests**, zero failed or skipped; integration into `main` remains |
+| Build 1.0.1 Hotfix | Commit `9ba9a1c` published on the hotfix branch; A–D checklist confirmed; **53/53 EditMode tests** on the hotfix; merge into `main` completed by `77a9bf4`; V2 integration verified with **57/57** |
 
 Verification ran in Unity `6000.3.8f1`, batch EditMode. Unity exited with code
 `0`, with no compilation errors. The local report is

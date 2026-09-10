@@ -5,9 +5,14 @@ accesso e trasporto vocale, mentre una mappa tattica condivisa determina chi
 può sentire chi in base a distanza, modalità di voce, muri, porte e gruppi
 privati.
 
-> **Stato:** Build 1.0.1 Hotfix · Discord Direct — validazione A–D confermata
-> dall'utente il 7 settembre; integrazione in `main` ancora da completare. La
-> V2 rimane separata su `develop/v2`.
+> **Stato:** `main` conserva la Build 1.0.1 Hotfix · Discord Direct, validata
+> dall'utente il 7 settembre. `develop/v2` e i suoi branch usano l'etichetta
+> V2 Preview e partono dalla base 1.0.1 verificata. Ogni modifica alla rete o
+> alla voce richiede una nuova validazione con più client.
+
+La suite V2 è stata eseguita il 7 settembre con Unity `6000.3.8f1` dopo
+l'integrazione del redesign e del lavoro di `feature-luca`: **70/70 test
+EditMode superati**, zero falliti o saltati e nessun errore di compilazione.
 
 [Documentazione completa in italiano](docs/README_IT.md) ·
 [Full documentation in English](docs/README_EN.md) ·
@@ -15,11 +20,36 @@ privati.
 [Hotfix 1.0.1 English](docs/HOTFIX_1_0_1_EN.md) ·
 [Kanban GitHub V2](https://github.com/users/dragonart19/projects/1/views/1) ·
 [Roadmap prodotto 2.0](docs/ROADMAP_2_0_IT.md) ·
-[Product Roadmap 2.0](docs/ROADMAP_2_0_EN.md)
+[Product Roadmap 2.0](docs/ROADMAP_2_0_EN.md) ·
+[Architettura modalità](docs/ARCHITECTURE_MODES_IT.md) ·
+[Design system UI](docs/UI_DESIGN_SYSTEM_IT.md) ·
+[UI design system](docs/UI_DESIGN_SYSTEM_EN.md)
+
+## Esito della prova del 6 settembre
+
+Il progetto è stato usato con **7 partecipanti totali, DM compreso**, e il
+riscontro generale è stato molto positivo. Il candidato più recente non è
+stato però usato per la sessione completa: durante la verifica precedente sono
+emersi muri spessi ancora troppo udibili e una perdita di chiamata/sessione.
+La partita è proseguita con una build precedente conservata su GitHub.
+
+Il registro locale del candidato contiene `JoinTimeout`, disconnessione Relay e
+lobby Discord non più disponibile. La Build 1.0.1 rafforza l'occlusione,
+conserva la sessione durante le riconnessioni brevi del client Discord e tenta
+fino a tre ripristini automatici della voce. L'utente ha confermato il 7
+settembre il completamento della checklist A–D: confronto acustico a due client,
+recupero dopo interruzione breve e prova prolungata. La suite EditMode è stata
+poi rieseguita con Unity `6000.3.8f1` alle 13:16 UTC: **53/53 test superati**,
+zero falliti o saltati e nessun errore di compilazione. L'hash del nuovo
+pacchetto non è ancora registrato nella repository.
+
+[Piano e checklist in italiano](docs/PLAYTEST_2026_09_06_IT.md) ·
+[Playtest plan and checklist in English](docs/PLAYTEST_2026_09_06_EN.md).
+La roadmap V2 resta valida; le nuove funzioni 3D seguono questa verifica.
 
 ## Direzione 2.0
 
-La Build 1.0 resta la base stabile. La prossima fase trasforma il progetto in
+La Build 1.0.1 resta la base stabile. La prossima fase trasforma il progetto in
 un tavolo virtuale ibrido **2D/3D** in cui il DM costruisce scene, controlla
 pedine e NPC e può parlare dal punto di vista di qualunque personaggio.
 
@@ -40,15 +70,19 @@ nel [Kanban GitHub ufficiale](https://github.com/users/dragonart19/projects/1/vi
 | Accesso | ✅ | OAuth2 Discord con PKCE, senza client secret nel progetto |
 | Sessioni | ✅ | Creazione e ingresso tramite codice di 6 caratteri |
 | Voce | ✅ | Chiamata Discord con attenuazione e tre tentativi automatici di ripristino, validata nella checklist A–D |
+| Controlli audio V2 | ✅ | Scelta input/output, volumi, sensibilità automatica/manuale, mute, deafen e push-to-talk |
 | Audio spaziale | 🟡 | Volume posizionale attivo; la direzione stereo dipende dai canali PCM forniti dal SDK |
 | Mappa | ✅ | Mappa condivisa, pedine sincronizzate, trascinamento DM e raggio vocale |
 | Navigazione | ✅ | Mappa ridimensionabile, barre di scorrimento e zoom con `Ctrl + rotellina` |
 | Costruzione | ✅ | Muri a spessore variabile, aggancio alla griglia, porte e stanze chiuse |
+| Azioni DM | ✅ | Toolbar a icone, selezione contestuale, spostamento/rotazione/eliminazione muri, espulsione e mute autorevole dei giocatori |
+| Sicurezza Relay | ✅ | Ogni connessione Relay viene associata all'identità Discord prima di ricevere o inviare lo stato della mappa |
 | Acustica | 🟡 | Muri spessi quasi opachi nella 1.0.1; filtro passa-basso e riverbero sono pianificati |
 | Gruppi | ✅ | Gruppi vocali privati A/B/C come regola di mix dell'app |
 | Salvataggi | ✅ | Salvataggio, caricamento ed eliminazione locale delle mappe |
-| Interfaccia | ✅ | Tema fantasy, menu laterale e pannello giocatori richiudibili |
+| Interfaccia | ✅ | Design system fantasy, safe area, scala responsive, tooltip, stati accessibili e pannelli richiudibili |
 | Utilità | ✅ | Copia codice sessione, apertura cartella log e accesso DM ai JSON delle mappe dal menu |
+| Modalità V2 | 🟡 | Selettore 2D/3D separato; Tavolo 2D disponibile, World Builder 3D ancora disabilitato |
 
 Legenda: ✅ disponibile · 🟡 parziale/da rifinire · ⬜ pianificato.
 
@@ -68,7 +102,8 @@ Per aprire il progetto:
 2. in Unity Hub scegli **Add project from disk**;
 3. seleziona la cartella `DnDVoice` contenuta nella repository;
 4. aprila con Unity `6000.3.8f1` e attendi il ripristino dei pacchetti;
-5. avvia la scena principale e autorizza Discord.
+5. avvia la scena principale e autorizza Discord;
+6. scegli **Tavolo 2D** per usare il flusso della Build 1.0.1.
 
 Per provare una sessione reale servono due istanze su due account Discord:
 il DM crea la sessione e condivide il codice, l'altro giocatore sceglie di
@@ -77,13 +112,19 @@ entrare e inserisce lo stesso codice.
 ## Comandi essenziali
 
 - `1`, `2`, `3`: Sussurro, Normale, Urlo.
+- `V` tenuto premuto: trasmette quando il push-to-talk è attivo.
+- `Invio`: conferma un codice sessione valido mentre il campo è selezionato.
 - Trascinamento pedina: spostamento sulla mappa; il DM controlla le pedine.
 - `Ctrl + rotellina`: zoom centrato sul puntatore.
 - Rotellina: scorrimento verticale; `Shift + rotellina`: orizzontale.
-- `Esc`: annulla il muro o la porta in costruzione.
+- `Esc`: chiude le impostazioni audio oppure annulla il muro o la porta in costruzione.
 - `Canc`/`Backspace`: elimina l'elemento di costruzione selezionato.
+- Toolbar mappa: seleziona, costruisce muri/porte, chiude stanze e controlla lo zoom.
+- Menu contestuale: sposta o ruota un muro; il DM può mutare o espellere un giocatore.
 - Menu burger → **COPIA**: copia il codice sessione senza spazi.
 - Menu burger → **UTILITÀ**: apre i log locali; il DM può aprire anche le mappe salvate.
+- **IMPOSTAZIONI AUDIO**: sceglie i dispositivi e regola volume, sensibilità,
+  deafen e push-to-talk senza modificare il percorso PCM.
 
 Con il menu aperto, trascinamento, barre di scorrimento e rotellina della mappa
 sono sospesi per evitare interazioni con gli elementi sottostanti.
@@ -108,13 +149,12 @@ sono sospesi per evitare interazioni con gli elementi sottostanti.
 ## Roadmap sintetica
 
 - diagnostica di riconnessione e test multi-client ripetibili;
-- selezione microfono/uscita, test livello e controlli volume;
-- indicatore chi-sente-chi più leggibile;
+- test livello microfono e volume per singolo giocatore;
 - telepatia e comunicazioni magiche;
 - sorgenti ambientali posizionali, riverbero e acustica avanzata;
 - selezione multipla, movimento di gruppo e teletrasporto DM;
 - campagne, preset di ambientazione e salvataggi cloud/esportabili;
-- accessibilità, ridimensionamento UI, localizzazione e build multipiattaforma.
+- navigazione controller completa, localizzazione e build multipiattaforma.
 
 La roadmap dettagliata, l'architettura, il comportamento acustico, il formato
 dei salvataggi, la procedura di build e la risoluzione dei problemi sono nella
@@ -138,7 +178,11 @@ docs/
 ├── HOTFIX_1_0_1_IT.md           correzioni e checklist della Build 1.0.1
 ├── HOTFIX_1_0_1_EN.md           Build 1.0.1 fixes and verification checklist
 ├── PLAYTEST_2026_09_06_IT.md    piano, checklist ed esiti della prova a 7
-└── PLAYTEST_2026_09_06_EN.md    seven-person playtest plan and results
+├── PLAYTEST_2026_09_06_EN.md    seven-person playtest plan and results
+├── ARCHITECTURE_MODES_IT.md      confini Build 1.0.1, 2D e 3D
+├── ARCHITECTURE_MODES_EN.md      Build 1.0.1, 2D, and 3D boundaries
+├── UI_DESIGN_SYSTEM_IT.md        token, componenti e regole UX V2
+└── UI_DESIGN_SYSTEM_EN.md        V2 tokens, components, and UX rules
 ```
 
 ## Sicurezza e licenza

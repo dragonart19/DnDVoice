@@ -108,6 +108,8 @@ record the commit, size, and SHA-256; do not overwrite the fallback package.
 
 Work remains on `hotfix/1.0-playtest-audio-stability`, derived from `main`.
 Commit `9ba9a1c` was published by the user on the remote branch and the A–D
-validation was confirmed. The fix must now enter `main`; `develop/v2` must be
-realigned immediately afterward before resuming the V2 roadmap. Commits,
-merges, and pushes remain the user's responsibility.
+validation was confirmed. The merge into `main` was completed by commit
+`77a9bf4`; the same foundation was then integrated into `develop/v2`. The
+combined V2 + hotfix suite passed **57/57 EditMode tests** on September 7 at
+13:43 UTC. The local report, ignored by Git, is
+`DnDVoice/Logs/v2-integration-editmode-results.xml`.
